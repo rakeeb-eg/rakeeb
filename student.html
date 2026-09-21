@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بوابة الطالب - رَقِـيـبْ Enterprise</title>
+  
+  <!-- PWA & Mobile Optimization -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="رقيب">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135755.png">
+
+  <!-- Frameworks & Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- QR Code Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    * { font-family: 'Cairo', system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: #0b0f19; color: #f8fafc; }
+
+    .glass-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .luxury-gradient {
+      background: linear-gradient(135deg, #4f46e5 0%, #312e81 100%);
+    }
+
+    .btn-press { transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); }
+    .btn-press:active { transform: scale(0.96); }
+
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.15);
+      border-radius: 50%;
+      border-top-color: #6366f1;
+      width: 22px;
+      height: 22px;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: smoothFade 0.25s ease-out; }
+    @keyframes smoothFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- OVERLAY LOADER -->
+  <div id="loader" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex flex-col items-center justify-center text-white">
+    <div class="spinner mb-3"></div>
+    <div id="loaderText" class="text-xs font-bold text-slate-300 tracking-wide">جاري الاتصال بالسحابة...</div>
+  </div>
+
+  <!-- 1. LOGIN SCREEN -->
+  <div id="loginScreen" class="fixed inset-0 bg-[#090d16] z-40 flex items-center justify-center p-4">
+    <div class="glass-card rounded-[32px] p-7 md:p-8 w-full max-w-sm shadow-2xl border border-white/10 text-center space-y-6">
+      <div>
+        <div class="w-16 h-16 rounded-2xl luxury-gradient flex items-center justify-center text-white text-2xl mx-auto shadow-lg shadow-indigo-500/25 mb-3">
+          <i class="fa-solid fa-graduation-cap"></i>
+        </div>
+        <h2 class="text-2xl font-black text-white">بوابة الطالب الذكية</h2>
+        <p class="text-xs text-slate-400 mt-1">منظومة رَقِـيـبْ الأكاديمية</p>
+      </div>
+
+      <form onsubmit="handleStudentLogin(event)" class="space-y-4 text-right">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">كود الطالب أو رقم الهاتف *</label>
+          <input type="text" id="loginStudentQuery" required placeholder="أدخل كودك أو رقم هاتفك..." class="w-full p-3.5 border border-slate-700 rounded-xl bg-slate-900/80 text-white font-bold text-xs md:text-sm outline-none focus:border-indigo-500 transition">
+        </div>
+
+        <button type="submit" class="w-full luxury-gradient hover:opacity-95 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-600/30 transition text-xs md:text-sm btn-press">
+          دخول البوابة وتثبيت الحساب 🚀
+        </button>
+      </form>
+      <div class="text-[11px] text-slate-500">إذا لم تكن مسجلاً، يرجى مراجعة أستاذك لإضافتك أولاً.</div>
+    </div>
+  </div>
+
+  <!-- 2. ANNUAL 10 EGP SUBSCRIPTION MODAL -->
+  <div id="paySubscriptionModal" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
+    <div class="glass-card rounded-[32px] p-6 md:p-8 w-full max-w-md shadow-2xl border border-amber-500/30 text-center space-y-5">
+      <div class="w-14 h-14 bg-amber-500/10 text-amber-400 rounded-2xl flex items-center justify-center mx-auto text-2xl shadow-inner">
+        <i class="fa-solid fa-id-badge"></i>
+      </div>
+      <div>
+        <h3 class="font-black text-xl text-white">تفعيل بطاقة الطالب الذكية</h3>
+        <p class="text-xs text-slate-400 mt-1">رسم سنوي رمزي لتغطية خدمات المنصة والـ QR Code السحابي</p>
+      </div>
+
+      <div class="p-4 bg-slate-900/60 rounded-2xl border border-slate-800 text-right space-y-3">
+        <div class="flex justify-between items-center text-xs">
+          <span class="text-slate-400">قيمة التفعيل السنوي:</span>
+          <span class="text-amber-400 font-black text-base">10 جنيه مصري فقط</span>
+        </div>
+        <div class="flex justify-between items-center text-xs border-t border-slate-800 pt-2">
+          <span class="text-slate-400">فودافون كاش / إنستاباي:</span>
+          <span class="text-white font-mono font-bold select-all bg-slate-800 px-2 py-0.5 rounded">01000000000</span>
+        </div>
+      </div>
+
+      <div class="space-y-2">
+        <button onclick="confirmPaymentWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl text-xs md:text-sm shadow-lg transition btn-press flex items-center justify-center gap-2">
+          <i class="fa-brands fa-whatsapp text-base"></i> إرسال إشعار السداد وتفعيل الحساب
+        </button>
+        <button onclick="logoutStudent()" class="w-full bg-slate-800 text-slate-400 py-2.5 rounded-xl text-xs font-semibold btn-press">
+          خروج مؤقت
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. MANDATORY INSTALL PWA OVERLAY MODAL -->
+  <div id="pwaInstallModal" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-2xl z-50 flex items-center justify-center p-4">
+    <div class="glass-card rounded-[32px] p-7 w-full max-w-sm border border-indigo-500/40 text-center space-y-5 shadow-2xl">
+      <div class="relative flex items-center justify-center mx-auto">
+        <div class="absolute w-20 h-20 bg-indigo-500/20 rounded-full blur-xl animate-pulse"></div>
+        <div class="w-16 h-16 rounded-2xl luxury-gradient flex items-center justify-center text-white text-3xl shadow-lg shadow-indigo-500/30">
+          <i class="fa-solid fa-mobile-screen"></i>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="font-black text-xl text-white">تثبيت تطبيق "رَقِـيـبْ"</h3>
+        <p class="text-xs text-slate-300 mt-1.5 leading-relaxed font-medium">
+          لضمان سهولة الوصول السريع إلى بطاقتك الذكية، مواعيد الحصص، وإشعارات الدرجات، يلزم تثبيت التطبيق على الشاشة الرئيسية.
+        </p>
+      </div>
+
+      <!-- Android / Chrome Button -->
+      <div id="androidInstallBox" class="space-y-2">
+        <button onclick="triggerPwaInstall()" class="w-full luxury-gradient text-white font-black py-4 rounded-2xl text-xs md:text-sm shadow-xl shadow-indigo-600/30 transition btn-press flex items-center justify-center gap-2">
+          <i class="fa-solid fa-download"></i> تثبيت التطبيق على الهاتف الآن 📲
+        </button>
+      </div>
+
+      <!-- iOS / Safari Guide -->
+      <div id="iosInstallGuide" class="hidden bg-slate-900/90 border border-indigo-500/30 p-4 rounded-2xl text-right text-xs space-y-2 text-slate-300">
+        <div class="font-bold text-indigo-300 text-center border-b border-slate-800 pb-1.5">مستخدمي iPhone (Safari):</div>
+        <div class="flex items-center gap-2">
+          <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 font-bold flex items-center justify-center text-[10px]">1</span>
+          <span>اضغط على زر المشاركة <i class="fa-solid fa-arrow-up-from-bracket text-indigo-400"></i> بالأسفل.</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 font-bold flex items-center justify-center text-[10px]">2</span>
+          <span>اختر <b>"إضافة إلى الصفحة الرئيسية"</b> (Add to Home Screen).</span>
+        </div>
+        <button onclick="dismissPwaModal()" class="w-full mt-2 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 py-2 rounded-xl text-[11px] font-bold">
+          تمت الإضافة بنجاح ✓
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. MAIN STUDENT DASHBOARD -->
+  <div id="studentApp" class="hidden flex-1 flex flex-col max-w-4xl w-full mx-auto p-4 md:p-6 space-y-5 pb-24">
+    
+    <!-- HEADER -->
+    <header class="glass-card p-4 rounded-3xl flex justify-between items-center border border-white/10 shadow-lg">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl luxury-gradient flex items-center justify-center text-white text-lg font-bold shadow-md">
+          <i class="fa-solid fa-user-graduate"></i>
+        </div>
+        <div>
+          <h2 class="font-black text-sm md:text-base text-white" id="headerStudentName">اسم الطالب</h2>
+          <span class="text-[10px] text-indigo-300 font-semibold" id="headerStudentGrade">الصف الدراسي</span>
+        </div>
+      </div>
+      <button onclick="logoutStudent()" class="text-xs bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 px-3.5 py-1.5 rounded-xl font-bold transition btn-press flex items-center gap-1.5">
+        <i class="fa-solid fa-power-off"></i> خروج
+      </button>
+    </header>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="flex bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 gap-1 text-xs font-bold text-slate-400">
+      <button onclick="switchStudentTab('card')" class="student-nav-btn flex-1 py-2.5 rounded-xl text-white bg-indigo-600/90 shadow transition" data-tab="card">
+        <i class="fa-solid fa-id-card ml-1"></i> بطاقتي
+      </button>
+      <button onclick="switchStudentTab('lessons')" class="student-nav-btn flex-1 py-2.5 rounded-xl hover:text-white transition" data-tab="lessons">
+        <i class="fa-solid fa-video ml-1"></i> الحصص
+      </button>
+      <button onclick="switchStudentTab('exams')" class="student-nav-btn flex-1 py-2.5 rounded-xl hover:text-white transition" data-tab="exams">
+        <i class="fa-solid fa-file-signature ml-1"></i> الامتحانات
+      </button>
+      <button onclick="switchStudentTab('attendance')" class="student-nav-btn flex-1 py-2.5 rounded-xl hover:text-white transition" data-tab="attendance">
+        <i class="fa-solid fa-clipboard-user ml-1"></i> الحضور
+      </button>
+    </nav>
+
+    <!-- 1. SMART CARD TAB -->
+    <section id="tab-card" class="tab-content active space-y-4">
+      <div class="luxury-gradient text-white p-6 md:p-8 rounded-[32px] shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="space-y-2 text-center md:text-right">
+          <span class="text-[10px] bg-white/20 px-3 py-1 rounded-full font-bold uppercase tracking-wider">بطاقة الحضور الرقمية</span>
+          <h3 class="text-2xl font-black mt-2" id="cardName">-</h3>
+          <div class="text-xs text-indigo-100 font-semibold" id="cardId">الكود الرقمي: -</div>
+          <div class="text-xs text-indigo-200" id="cardGroup">المجموعة: -</div>
+          <p class="text-[11px] text-indigo-200/80 pt-2">أظهر هذا الكود للأستاذ أو المساعد عند دخول الحصة لمسحه مباشرة[cite: 1].</p>
+        </div>
+        <div id="cardQrCode" class="bg-white p-3 rounded-2xl shadow-xl flex items-center justify-center"></div>
+      </div>
+    </section>
+
+    <!-- 2. LESSONS TAB -->
+    <section id="tab-lessons" class="tab-content space-y-3">
+      <h3 class="font-bold text-sm text-slate-300">أرشيف شروحات ومراجعات الفيديو:</h3>
+      <div id="studentLessonsList" class="space-y-2.5">
+        <p class="text-slate-500 text-xs text-center py-6">لا توجد حصص مسجلة متاحة حالياً.</p>
+      </div>
+    </section>
+
+    <!-- 3. EXAMS TAB -->
+    <section id="tab-exams" class="tab-content space-y-3">
+      <h3 class="font-bold text-sm text-slate-300">نتائج امتحاناتي والكويزات:</h3>
+      <div id="studentExamsList" class="space-y-2.5">
+        <p class="text-slate-500 text-xs text-center py-6">لم يتم رصد درجات امتحانات لك حتى الآن.</p>
+      </div>
+    </section>
+
+    <!-- 4. ATTENDANCE TAB -->
+    <section id="tab-attendance" class="tab-content space-y-3">
+      <div class="flex justify-between items-center">
+        <h3 class="font-bold text-sm text-slate-300">سجل حضوري وغيابي:</h3>
+        <span id="studentAttendanceRate" class="text-xs text-indigo-400 font-bold bg-indigo-500/10 px-2.5 py-1 rounded-lg">نسبة الحضور: 0%</span>
+      </div>
+      <div id="studentAttendanceList" class="space-y-2">
+        <p class="text-slate-500 text-xs text-center py-6">لا يوجد سجل حضور مسجل.</p>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- CORE LOGIC SCRIPT -->
+  <script>
+    const CORE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWTh9SkfaCo9I1kkhMcSnAyamL9R7CyuT7BGixFpW92SAsVGcsBHDEAFWGmFwLopiV/exec";
+    const ATTENDANCE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkJx36aqzGdSr-oh3_uYowEOMwGpcVKN8RKJzr6PpW02RAhIA8k-0w6juyyZyDx5TOzw/exec";
+
+    let currentStudent = null;
+    let allLessons = [];
+    let allExams = [];
+    let attendanceLogs = [];
+    let allClasses = [];
+    let deferredPrompt = null;
+
+    // Service Worker Registration for PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Registration error:', err));
+    }
+
+    // Capture PWA Install Prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+    });
+
+    function isAppRunningStandalone() {
+      return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    }
+
+    // Auto-login & URL Check on Launch
+    window.onload = async () => {
+      const savedStudentQuery = localStorage.getItem("raqib_student_session_query");
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlId = urlParams.get('id');
+
+      const targetQuery = urlId || savedStudentQuery;
+
+      if (targetQuery) {
+        document.getElementById("loginStudentQuery").value = targetQuery;
+        await performLogin(targetQuery, false);
+      }
+    };
+
+    function showLoader(txt = "جاري التحميل...") {
+      document.getElementById("loaderText").innerText = txt;
+      document.getElementById("loader").classList.remove("hidden");
+    }
+    function hideLoader() { document.getElementById("loader").classList.add("hidden"); }
+
+    async function handleStudentLogin(e) {
+      e.preventDefault();
+      const q = document.getElementById("loginStudentQuery").value.trim();
+      if (!q) return;
+      await performLogin(q, true);
+    }
+
+    async function performLogin(searchQuery, isManualSubmit = false) {
+      showLoader("جاري مزامنة حساب الطالب...");
+
+      try {
+        const resCore = await fetch(CORE_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "getCoreData" })
+        });
+        const dataCore = await resCore.json();
+
+        if (dataCore && dataCore.status === "success") {
+          const students = dataCore.students || [];
+          allLessons = dataCore.lessons || [];
+          allExams = dataCore.exams || [];
+          allClasses = dataCore.classes || [];
+
+          // فحص الطالب بالكود أو برقم الهاتف
+          const match = students.find(s => 
+            s.id.toString() === searchQuery.toString() || 
+            (s.phone && s.phone === searchQuery) || 
+            (s.parentPhone && s.parentPhone === searchQuery)
+          );
+
+          if (!match) {
+            if (isManualSubmit) {
+              alert("❌ لم يتم العثور على طالب مطابق للكود أو رقم الهاتف! يرجى مراجعة أستاذك.");
+            } else {
+              localStorage.removeItem("raqib_student_session_query");
+            }
+            hideLoader();
+            return;
+          }
+
+          currentStudent = match;
+          
+          // حفظ الجلسة بالمتصفح دائماً
+          localStorage.setItem("raqib_student_session_query", currentStudent.id);
+
+          // جلب سجل الحضور
+          try {
+            const resAtt = await fetch(ATTENDANCE_SCRIPT_URL, {
+              method: "POST",
+              headers: { "Content-Type": "text/plain;charset=utf-8" },
+              body: JSON.stringify({ action: "getAttendanceLogs" })
+            });
+            const dataAtt = await resAtt.json();
+            if (dataAtt && dataAtt.status === "success") {
+              attendanceLogs = dataAtt.logs || [];
+            }
+          } catch(e) {
+            console.warn("Attendance fetch error:", e);
+          }
+
+          document.getElementById("loginScreen").classList.add("hidden");
+
+          // التحقق من تفعيل رسم الـ 10 جنيهات
+          const isPaid = localStorage.getItem(`raqib_student_paid_${currentStudent.id}`) === "true";
+          if (!isPaid) {
+            document.getElementById("paySubscriptionModal").classList.remove("hidden");
+          } else {
+            renderStudentDashboard();
+            checkAndPromptPWAInstall();
+          }
+        }
+      } catch (err) {
+        if (isManualSubmit) alert("حدث خطأ أثناء الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت.");
+      } finally {
+        hideLoader();
+      }
+    }
+
+    function confirmPaymentWhatsApp() {
+      const msg = `مرحباً إدارة رَقِـيـبْ،\nأنا الطالب: ${currentStudent.name}\nالكود: [${currentStudent.id}]\nقمت بسداد رسوم تفعيل البطاقة الذكية (10 ج) وأرغب في اعتماد التفعيل.`;
+      localStorage.setItem(`raqib_student_paid_${currentStudent.id}`, "true");
+      window.open(`https://wa.me/201000000000?text=${encodeURIComponent(msg)}`, '_blank');
+      document.getElementById("paySubscriptionModal").classList.add("hidden");
+      renderStudentDashboard();
+      checkAndPromptPWAInstall();
+    }
+
+    function renderStudentDashboard() {
+      document.getElementById("studentApp").classList.remove("hidden");
+
+      document.getElementById("headerStudentName").innerText = currentStudent.name;
+      document.getElementById("headerStudentGrade").innerText = currentStudent.grade || "طالب";
+
+      document.getElementById("cardName").innerText = currentStudent.name;
+      document.getElementById("cardId").innerText = `الكود الرقمي: [${currentStudent.id}]`;
+      
+      const grp = allClasses.find(c => c.groupCode === currentStudent.groupCode);
+      document.getElementById("cardGroup").innerText = `المجموعة: ${grp ? grp.groupName : 'بدون مجموعة'}`;
+
+      // توليد الـ QR Code للبطاقة
+      const qrEl = document.getElementById("cardQrCode");
+      qrEl.innerHTML = "";
+      new QRCode(qrEl, {
+        text: currentStudent.id.toString(),
+        width: 110,
+        height: 110,
+        colorDark: "#1e1b4b",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      renderStudentLessons();
+      renderStudentExams();
+      renderStudentAttendance();
+    }
+
+    function renderStudentLessons() {
+      const container = document.getElementById("studentLessonsList");
+      const matched = allLessons.filter(l => l.grade === currentStudent.grade || l.groupCode === currentStudent.groupCode || l.groupCode === "ALL");
+
+      if (matched.length === 0) {
+        container.innerHTML = '<p class="text-slate-500 text-xs text-center py-6">لا توجد حصص مسجلة لصفك الدراسي حالياً.</p>';
+        return;
+      }
+
+      container.innerHTML = matched.map(l => `
+        <div class="glass-card p-4 rounded-2xl flex justify-between items-center text-xs">
+          <div>
+            <div class="font-bold text-white text-sm">${l.title}</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">📅 ${l.date}</div>
+          </div>
+          <a href="${l.videoUrl}" target="_blank" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition btn-press">
+            <i class="fa-solid fa-play"></i> تشغيل
+          </a>
+        </div>
+      `).join('');
+    }
+
+    function renderStudentExams() {
+      const container = document.getElementById("studentExamsList");
+      const myExams = allExams.filter(e => e.scores && e.scores[currentStudent.id] !== undefined);
+
+      if (myExams.length === 0) {
+        container.innerHTML = '<p class="text-slate-500 text-xs text-center py-6">لم يتم رصد درجات امتحانات لك حتى الآن.</p>';
+        return;
+      }
+
+      container.innerHTML = myExams.map(e => `
+        <div class="glass-card p-4 rounded-2xl flex justify-between items-center text-xs">
+          <div>
+            <div class="font-bold text-white text-sm">${e.title}</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">📅 ${e.date} | الدرجة النهائية: ${e.maxScore}</div>
+          </div>
+          <span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 font-black text-sm px-3 py-1 rounded-xl">
+            ${e.scores[currentStudent.id]} / ${e.maxScore}
+          </span>
+        </div>
+      `).join('');
+    }
+
+    function renderStudentAttendance() {
+      const container = document.getElementById("studentAttendanceList");
+      const myAtt = attendanceLogs.filter(a => a.studentId === currentStudent.id.toString());
+
+      if (myAtt.length === 0) {
+        container.innerHTML = '<p class="text-slate-500 text-xs text-center py-6">لا يوجد سجل حضور مسجل حتى الآن.</p>';
+        return;
+      }
+
+      const presentCount = myAtt.filter(a => a.status === "Present").length;
+      const rate = Math.round((presentCount / myAtt.length) * 100);
+      document.getElementById("studentAttendanceRate").innerText = `نسبة الحضور: ${rate}% (${presentCount} من ${myAtt.length})`;
+
+      container.innerHTML = myAtt.map(a => `
+        <div class="glass-card p-3 rounded-2xl flex justify-between items-center text-xs">
+          <div>
+            <div class="font-bold text-white">${a.groupName}</div>
+            <div class="text-[10px] text-slate-400">📅 ${a.date} | ⏰ ${a.time}</div>
+          </div>
+          <span class="font-bold px-2.5 py-1 rounded-lg ${a.status === 'Present' ? 'text-emerald-400 bg-emerald-500/10' : 'text-rose-400 bg-rose-500/10'}">
+            ${a.status === 'Present' ? 'حاضر ✅' : 'غائب ❌'}
+          </span>
+        </div>
+      `).join('');
+    }
+
+    function switchStudentTab(tabId) {
+      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+      document.getElementById(`tab-${tabId}`)?.classList.add("active");
+
+      document.querySelectorAll(".student-nav-btn").forEach(btn => {
+        if (btn.dataset.tab === tabId) {
+          btn.className = "student-nav-btn flex-1 py-2.5 rounded-xl text-white bg-indigo-600/90 shadow transition";
+        } else {
+          btn.className = "student-nav-btn flex-1 py-2.5 rounded-xl hover:text-white transition";
+        }
+      });
+    }
+
+    function checkAndPromptPWAInstall() {
+      if (isAppRunningStandalone()) return;
+
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      const modal = document.getElementById("pwaInstallModal");
+      modal.classList.remove("hidden");
+
+      if (isIOS) {
+        document.getElementById("androidInstallBox").classList.add("hidden");
+        document.getElementById("iosInstallGuide").classList.remove("hidden");
+      }
+    }
+
+    async function triggerPwaInstall() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        if (outcome === 'accepted') dismissPwaModal();
+      } else {
+        alert("لتثبيت التطبيق: اضغط على خيارات المتصفح (⋮) ثم اختر 'إضافة إلى الشاشة الرئيسية' أو 'Install App'.");
+        dismissPwaModal();
+      }
+    }
+
+    function dismissPwaModal() {
+      document.getElementById("pwaInstallModal").classList.add("hidden");
+    }
+
+    // تسجيل الخروج التام ومسح الجلسة المحفوظة
+    function logoutStudent() {
+      if (confirm("هل تريد تسجيل الخروج؟ ستحتاج لإدخال الكود مرة أخرى عند الدخول.")) {
+        localStorage.removeItem("raqib_student_session_query");
+        currentStudent = null;
+        document.getElementById("studentApp").classList.add("hidden");
+        document.getElementById("paySubscriptionModal").classList.add("hidden");
+        document.getElementById("loginScreen").classList.remove("hidden");
+        document.getElementById("loginStudentQuery").value = "";
+      }
+    }
+  </script>
+</body>
+</html>

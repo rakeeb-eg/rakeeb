@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة إدارة المنصة - رَقِـيـبْ Enterprise</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    * { font-family: 'Cairo', system-ui, -apple-system, sans-serif; }
+    body { background-color: #0b0f19; color: #f8fafc; }
+
+    .glass-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .luxury-gradient {
+      background: linear-gradient(135deg, #4f46e5 0%, #312e81 100%);
+    }
+
+    .btn-press { transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1); }
+    .btn-press:active { transform: scale(0.96); }
+
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.15);
+      border-radius: 50%;
+      border-top-color: #6366f1;
+      width: 22px;
+      height: 22px;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: smoothFade 0.25s ease-out; }
+    @keyframes smoothFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 5px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- OVERLAY LOADER -->
+  <div id="loader" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex flex-col items-center justify-center text-white">
+    <div class="spinner mb-3"></div>
+    <div id="loaderText" class="text-xs font-bold text-slate-300">جاري المعالجة...</div>
+  </div>
+
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen" class="fixed inset-0 bg-[#090d16] z-40 flex items-center justify-center p-4">
+    <div class="glass-card rounded-[32px] p-8 w-full max-w-sm shadow-2xl border border-white/10 text-center space-y-6">
+      <div>
+        <div class="w-16 h-16 rounded-2xl luxury-gradient flex items-center justify-center text-white text-2xl mx-auto shadow-lg shadow-indigo-500/25 mb-3">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h2 class="text-2xl font-black text-white">إدارة رَقِـيـبْ</h2>
+        <p class="text-xs text-slate-400 mt-1">Super Admin Control Center</p>
+      </div>
+
+      <form onsubmit="handleAdminLogin(event)" class="space-y-4 text-right">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">اسم المستخدم</label>
+          <input type="text" id="adminUser" required placeholder="admin" class="w-full p-3.5 border border-slate-700 rounded-xl bg-slate-900/80 text-white font-bold text-xs md:text-sm outline-none focus:border-indigo-500 transition">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">كلمة المرور</label>
+          <input type="password" id="adminPass" required placeholder="••••••••" class="w-full p-3.5 border border-slate-700 rounded-xl bg-slate-900/80 text-white font-bold text-xs md:text-sm outline-none focus:border-indigo-500 transition">
+        </div>
+
+        <button type="submit" class="w-full luxury-gradient hover:opacity-95 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-600/30 transition text-xs md:text-sm btn-press">
+          دخول لوحة التحكم 🚀
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN ADMIN DASHBOARD -->
+  <div id="adminApp" class="hidden flex-1 flex flex-col max-w-6xl w-full mx-auto p-4 md:p-8 space-y-6 pb-20">
+    
+    <!-- HEADER -->
+    <header class="glass-card p-5 rounded-3xl flex justify-between items-center border border-white/10 shadow-lg">
+      <div class="flex items-center gap-3.5">
+        <div class="w-11 h-11 rounded-2xl luxury-gradient flex items-center justify-center text-white text-xl font-bold shadow-md shadow-indigo-500/20">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div>
+          <h1 class="font-black text-base md:text-lg text-white">رَقِـيـبْ - إدارة المنظومة</h1>
+          <span class="text-[10px] text-indigo-300 font-bold uppercase tracking-wider">Super Administrator Portal</span>
+        </div>
+      </div>
+      <button onclick="logoutAdmin()" class="text-xs bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 px-4 py-2 rounded-xl font-bold transition btn-press flex items-center gap-2">
+        <i class="fa-solid fa-power-off"></i> خروج
+      </button>
+    </header>
+
+    <!-- STATS OVERVIEW -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      <div class="glass-card p-4 md:p-5 rounded-2xl border">
+        <div class="text-slate-400 text-xs font-semibold mb-1 flex items-center gap-1.5">
+          <i class="fa-solid fa-user-clock text-amber-400"></i> طلبات معلمين معلقة
+        </div>
+        <div id="statPendingTeachers" class="text-2xl md:text-3xl font-black text-amber-400">0</div>
+      </div>
+      <div class="glass-card p-4 md:p-5 rounded-2xl border">
+        <div class="text-slate-400 text-xs font-semibold mb-1 flex items-center gap-1.5">
+          <i class="fa-solid fa-chalkboard-user text-indigo-400"></i> إجمالي المعلمين
+        </div>
+        <div id="statApprovedTeachers" class="text-2xl md:text-3xl font-black text-white">0</div>
+      </div>
+      <div class="glass-card p-4 md:p-5 rounded-2xl border">
+        <div class="text-slate-400 text-xs font-semibold mb-1 flex items-center gap-1.5">
+          <i class="fa-solid fa-users text-blue-400"></i> إجمالي الطلاب بالمنصة
+        </div>
+        <div id="statTotalStudents" class="text-2xl md:text-3xl font-black text-white">0</div>
+      </div>
+      <div class="glass-card p-4 md:p-5 rounded-2xl border">
+        <div class="text-slate-400 text-xs font-semibold mb-1 flex items-center gap-1.5">
+          <i class="fa-solid fa-coins text-emerald-400"></i> عوائد الاشتراكات (10 ج)
+        </div>
+        <div id="statTotalRevenue" class="text-2xl md:text-3xl font-black text-emerald-400">0 ج.م</div>
+      </div>
+    </div>
+
+    <!-- TABS NAVIGATION -->
+    <nav class="flex bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 gap-2 text-xs font-bold text-slate-400 max-w-md">
+      <button onclick="switchAdminTab('teachers')" class="admin-nav-btn flex-1 py-2.5 rounded-xl text-white bg-indigo-600/90 shadow transition" data-tab="teachers">
+        <i class="fa-solid fa-user-plus ml-1"></i> طلبات المعلمين
+      </button>
+      <button onclick="switchAdminTab('students')" class="admin-nav-btn flex-1 py-2.5 rounded-xl hover:text-white transition" data-tab="students">
+        <i class="fa-solid fa-id-badge ml-1"></i> تفعيل اشتراكات الطلاب
+      </button>
+    </nav>
+
+    <!-- 1. TEACHER REQUESTS TAB -->
+    <section id="tab-teachers" class="tab-content active space-y-4">
+      <div class="flex justify-between items-center">
+        <h2 class="text-base md:text-lg font-black text-white">طلبات انضمام المعلمين الجدد</h2>
+        <button onclick="loadAdminData()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5">
+          <i class="fa-solid fa-rotate-right"></i> تحديث
+        </button>
+      </div>
+
+      <div id="teacherRequestsList" class="space-y-3">
+        <p class="text-slate-500 text-xs text-center py-8">جاري جلب الطلبات...</p>
+      </div>
+    </section>
+
+    <!-- 2. STUDENT SUBSCRIPTIONS TAB -->
+    <section id="tab-students" class="tab-content space-y-4">
+      <div class="flex justify-between items-center">
+        <h2 class="text-base md:text-lg font-black text-white">إدارة اشتراكات الطلاب وتفعيل البطاقات الذكية</h2>
+        <input type="text" id="studentFilterInput" onkeyup="filterAdminStudents()" placeholder="بحث برقم الكود أو اسم الطالب..." class="p-2 px-3 bg-slate-900 border border-slate-700 rounded-xl text-xs font-semibold outline-none text-white w-60">
+      </div>
+
+      <div id="studentsSubscriptionsList" class="space-y-2.5">
+        <p class="text-slate-500 text-xs text-center py-8">جاري جلب قائمة الطلاب...</p>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    const CORE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWTh9SkfaCo9I1kkhMcSnAyamL9R7CyuT7BGixFpW92SAsVGcsBHDEAFWGmFwLopiV/exec";
+
+    let teacherRequests = [];
+    let allStudents = [];
+
+    function showLoader(txt = "جاري التحميل...") {
+      document.getElementById("loaderText").innerText = txt;
+      document.getElementById("loader").classList.remove("hidden");
+    }
+    function hideLoader() { document.getElementById("loader").classList.add("hidden"); }
+
+    window.onload = () => {
+      if (sessionStorage.getItem("raqib_admin_auth") === "true") {
+        document.getElementById("loginScreen").classList.add("hidden");
+        document.getElementById("adminApp").classList.remove("hidden");
+        loadAdminData();
+      }
+    };
+
+    function handleAdminLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById("adminUser").value.trim();
+      const p = document.getElementById("adminPass").value.trim();
+
+      // بيانات مرور الأدمن
+      if (u === "admin" && p === "raqib2026") {
+        sessionStorage.setItem("raqib_admin_auth", "true");
+        document.getElementById("loginScreen").classList.add("hidden");
+        document.getElementById("adminApp").classList.remove("hidden");
+        loadAdminData();
+      } else {
+        alert("اسم المستخدم أو كلمة المرور غير صحيحة!");
+      }
+    }
+
+    function logoutAdmin() {
+      sessionStorage.removeItem("raqib_admin_auth");
+      location.reload();
+    }
+
+    async function loadAdminData() {
+      showLoader("جاري مزامنة بيانات الإدارة...");
+      try {
+        const res = await fetch(CORE_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "getAdminData" })
+        });
+        const data = await res.json();
+
+        if (data && data.status === "success") {
+          teacherRequests = data.teacherRequests || [];
+          allStudents = data.students || [];
+
+          updateAdminStats();
+          renderTeacherRequests();
+          renderStudentSubscriptions();
+        }
+      } catch (err) {
+        alert("حدث خطأ أثناء جلب البيانات من الخادم.");
+      } finally {
+        hideLoader();
+      }
+    }
+
+    function updateAdminStats() {
+      const pendingCount = teacherRequests.filter(r => r.status === "Pending").length;
+      const approvedCount = teacherRequests.filter(r => r.status === "Approved").length;
+      const activeSubsCount = allStudents.filter(s => s.subscriptionActive === true || s.subscriptionActive === "true").length;
+
+      document.getElementById("statPendingTeachers").innerText = pendingCount;
+      document.getElementById("statApprovedTeachers").innerText = approvedCount;
+      document.getElementById("statTotalStudents").innerText = allStudents.length;
+      document.getElementById("statTotalRevenue").innerText = `${activeSubsCount * 10} ج.م`;
+    }
+
+    function renderTeacherRequests() {
+      const container = document.getElementById("teacherRequestsList");
+      if (!container) return;
+
+      if (teacherRequests.length === 0) {
+        container.innerHTML = '<p class="text-slate-500 text-xs text-center py-8">لا توجد طلبات معلمين مسجلة حالياً.</p>';
+        return;
+      }
+
+      const reversed = [...teacherRequests].reverse();
+
+      container.innerHTML = reversed.map(r => {
+        const isPending = r.status === "Pending";
+        const cleanPhone = r.phone.replace(/[^0-9]/g, '');
+        const waLink = `https://wa.me/2${cleanPhone.startsWith('0') ? cleanPhone.substring(1) : cleanPhone}?text=${encodeURIComponent(`مرحباً أستاذ ${r.name}، بخصوص طلب انضمامكم لمنظومة رَقِـيـبْ لإدارة مجموعات مادة (${r.subject})...`)}`;
+
+        return `
+          <div class="glass-card p-5 rounded-2xl border space-y-3">
+            <div class="flex justify-between items-start border-b border-slate-800 pb-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="font-black text-sm md:text-base text-white">${r.name}</h3>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${isPending ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'}">
+                    ${isPending ? 'قيد المراجعة' : 'تم الاعتماد ✓'}
+                  </span>
+                </div>
+                <div class="text-xs text-indigo-300 font-semibold mt-0.5">مادة: ${r.subject} | 📍 ${r.governorate} (${r.area || ''})</div>
+              </div>
+              <span class="text-[10px] text-slate-400 font-mono">📅 ${r.date}</span>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-slate-300">
+              <div>📞 الهاتف: <span class="font-bold text-white">${r.phone}</span></div>
+              <div>👥 الطلاب المقدرين: <span class="font-bold text-white">${r.studentsCount}</span></div>
+              ${r.notes ? `<div class="col-span-2 md:col-span-1 text-slate-400">📝 ملاحظة: ${r.notes}</div>` : ''}
+            </div>
+
+            <div class="flex justify-end items-center gap-2 pt-2 border-t border-slate-800/80">
+              <a href="${waLink}" target="_blank" class="px-3 py-1.5 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition">
+                <i class="fa-brands fa-whatsapp text-sm"></i> محادثة واتساب
+              </a>
+              ${isPending ? `
+                <button onclick="approveTeacherRequest('${r.requestId}', '${r.name}')" class="px-4 py-1.5 luxury-gradient text-white rounded-xl text-xs font-bold shadow transition btn-press">
+                  اعتماد وتفعيل المعلم ✓
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function approveTeacherRequest(requestId, teacherName) {
+      if (!confirm(`هل أنت متأكد من اعتماد الأستاذ (${teacherName})؟`)) return;
+
+      showLoader("جاري اعتماد المعلم...");
+      try {
+        const res = await fetch(CORE_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "approveTeacherRequest", requestId })
+        });
+        const result = await res.json();
+        if (result && result.status === "success") {
+          alert("✅ تم اعتماد المعلم بنجاح وتحديث حالته.");
+          loadAdminData();
+        } else {
+          alert("❌ تعذر الاعتماد.");
+        }
+      } catch (e) {
+        alert("حدث خطأ أثناء الاتصال.");
+      } finally {
+        hideLoader();
+      }
+    }
+
+    function renderStudentSubscriptions(filtered = null) {
+      const container = document.getElementById("studentsSubscriptionsList");
+      if (!container) return;
+
+      const list = filtered || allStudents;
+
+      if (list.length === 0) {
+        container.innerHTML = '<p class="text-slate-500 text-xs text-center py-8">لا يوجد طلاب مطابقين للبحث.</p>';
+        return;
+      }
+
+      container.innerHTML = list.map(s => {
+        const isPaid = s.subscriptionActive === true || s.subscriptionActive === "true";
+
+        return `
+          <div class="glass-card p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs">
+            <div>
+              <div class="font-bold text-white text-sm flex items-center gap-2">
+                ${s.name}
+                <span class="text-[10px] text-slate-400 font-mono">[${s.id}]</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5">الصف: ${s.grade || '-'} | ولي الأمر: ${s.parentPhone || s.phone || '-'}</div>
+            </div>
+
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+              <span class="px-2.5 py-1 rounded-xl text-xs font-bold ${isPaid ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">
+                ${isPaid ? 'مفعّل (مسدد 10 ج) ✓' : 'غير مفعّل ✕'}
+              </span>
+              <button onclick="toggleStudentSubscription('${s.id}', ${!isPaid})" class="px-3 py-1.5 rounded-xl text-xs font-bold transition btn-press ${isPaid ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow'}">
+                ${isPaid ? 'إلغاء التفعيل' : 'تأكيد دفع 10 ج وتفعيل'}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterAdminStudents() {
+      const q = document.getElementById("studentFilterInput")?.value.toLowerCase().trim();
+      if (!q) {
+        renderStudentSubscriptions();
+        return;
+      }
+      const filtered = allStudents.filter(s => 
+        s.name.toLowerCase().includes(q) || s.id.toString().includes(q) || (s.phone && s.phone.includes(q))
+      );
+      renderStudentSubscriptions(filtered);
+    }
+
+    async function toggleStudentSubscription(studentId, newStatus) {
+      showLoader("جاري تحديث حالة اشتراك الطالب...");
+      try {
+        const res = await fetch(CORE_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "updateStudentSubscription", studentId, status: newStatus })
+        });
+        const result = await res.json();
+        if (result && result.status === "success") {
+          const std = allStudents.find(s => s.id.toString() === studentId.toString());
+          if (std) std.subscriptionActive = newStatus;
+          updateAdminStats();
+          renderStudentSubscriptions();
+        }
+      } catch(e) {
+        alert("حدث خطأ أثناء التحديث.");
+      } finally {
+        hideLoader();
+      }
+    }
+
+    function switchAdminTab(tabId) {
+      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+      document.getElementById(`tab-${tabId}`)?.classList.add("active");
+
+      document.querySelectorAll(".admin-nav-btn").forEach(btn => {
+        if (btn.dataset.tab === tabId) {
+          btn.className = "admin-nav-btn flex-1 py-2.5 rounded-xl text-white bg-indigo-600/90 shadow transition";
+        } else {
+          btn.className = "admin-nav-btn flex-1 py-2.5 rounded-xl hover:text-white transition";
+        }
+      });
+    }
+  </script>
+</body>
+</html>

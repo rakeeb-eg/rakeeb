@@ -11,10 +11,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
 
-  <!-- مشغل Plyr -->
-  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-  <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
-
   <style>
     body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f8fafc; }
     .tab-content { display: none; }
@@ -39,46 +35,26 @@
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
     /* ========================================================= */
-    /* معمارية المشغل الصافي لضمان عدم ظهور شاشة سوداء وعرض 16:9 */
+    /* معمارية المشغل النظيف والثابت 16:9 بدون شاشة سوداء */
     /* ========================================================= */
-    :root {
-      --plyr-color-main: #4f46e5;
-      --plyr-video-background: #000000;
-    }
-
-    .pure-video-stage {
+    .clean-video-container {
       position: relative;
       width: 100%;
-      padding-top: 56.25%; /* النسبة القياسية 16:9 */
+      height: 0;
+      padding-bottom: 56.25%; /* نسبة 16:9 القياسية بدقة */
       background: #000;
-      border-radius: 1.5rem;
+      border-radius: 1rem;
       overflow: hidden;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
     }
 
-    .pure-video-stage .plyr {
+    .clean-video-container iframe {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-    }
-
-    .pure-video-stage iframe {
-      width: 100% !important;
-      height: 100% !important;
-      border: 0 !important;
-      /* إزالة pointer-events: none مؤقتاً أو تعديلها لمنع حجب رندر الفيديو من يوتيوب في بعض متصفحات المحلي Live Server */
-    }
-
-    /* طبقة التحكم البرمجية العازلة الخاصة بنا */
-    .pure-event-interceptor {
-      position: absolute;
-      inset: 0;
-      bottom: 50px; 
-      z-index: 5; /* خفضنا الـ z-index قليلاً لكي يسمح لعناصر يوتيوب بالظهور سليمة */
-      cursor: pointer;
-      background: transparent;
+      border: 0;
     }
 
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -95,7 +71,7 @@
     <div id="globalLoaderText" class="text-sm font-bold">جاري معالجة البيانات...</div>
   </div>
 
-  <!-- TEACHER LOGIN SCREEN (VERIFICATION CODE) -->
+  <!-- TEACHER LOGIN SCREEN -->
   <div id="teacherLoginScreen" class="fixed inset-0 bg-slate-900 bg-opacity-95 z-40 flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-slate-200 text-center space-y-4">
       <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto text-white text-3xl shadow-lg transform -rotate-3">
@@ -536,7 +512,7 @@
           <div class="flex justify-between items-center">
             <div>
               <h2 class="text-lg md:text-xl font-black text-slate-800">الحصص المسجلة الذكية</h2>
-              <p class="text-xs text-slate-500">مشغل Plyr بنسبة 16:9 أصلية بدون تشويه، مع إدارة كاملة للإتاحة</p>
+              <p class="text-xs text-slate-500">مشغل نظيف ومستقر بنسبة 16:9 حقيقية بدون أي شاشة سوداء</p>
             </div>
             <button onclick="openLessonModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs md:text-sm font-bold px-4 py-2.5 rounded-xl shadow flex items-center gap-1.5 transition btn-press">
               <i class="fa-solid fa-video"></i> إضافة حصة جديدة
@@ -568,10 +544,9 @@
 
             <div>
               <label class="block text-[10px] font-bold text-slate-500 mb-1">رابط فيديو YouTube (Unlisted / Public) *</label>
-              <input type="url" id="modalLessonUrl" placeholder="https://www.youtube.com/watch?v=... أو https://youtu.be/..." class="w-full p-2.5 border rounded-xl text-xs md:text-sm bg-slate-50 outline-none font-mono">
+              <input type="url" id="modalLessonUrl" placeholder="https://www.youtube.com/watch?v=..." class="w-full p-2.5 border rounded-xl text-xs md:text-sm bg-slate-50 outline-none font-mono">
             </div>
 
-            <!-- إعدادات التسعير والدفع -->
             <div class="bg-indigo-50/70 p-3.5 rounded-2xl border border-indigo-100 space-y-2.5">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-indigo-950">إتاحة الحصة للطلاب:</span>
@@ -588,7 +563,6 @@
               <div id="lessonPriceFieldContainer" class="hidden pt-1">
                 <label class="block text-[10px] font-bold text-indigo-900 mb-1">سعر مشاهدة الحصة (ج.م) *</label>
                 <input type="number" id="modalLessonPrice" placeholder="مثال: 30" class="w-full p-2.5 border border-indigo-200 rounded-xl text-xs md:text-sm bg-white outline-none font-bold text-emerald-600">
-                <span class="text-[10px] text-indigo-600 mt-1 block">💡 ستظهر الحصة للطالب مقفولة حتى تقوم بتأكيد استلام قيمتها.</span>
               </div>
             </div>
 
@@ -598,7 +572,7 @@
             </div>
           </div>
 
-          <!-- نافذة فك قفل الحصص للطلاب (Access Manager) -->
+          <!-- نافذة فك قفل الحصص للطلاب -->
           <div id="lessonAccessModal" class="hidden fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4">
             <div class="bg-white rounded-3xl p-5 md:p-6 w-full max-w-lg shadow-2xl border border-slate-200 space-y-3.5 text-right max-h-[85vh] flex flex-col">
               <div class="flex justify-between items-center border-b pb-2">
@@ -622,7 +596,7 @@
             </div>
           </div>
 
-          <!-- نافذة المشغل الصافي 16:9 بنقاء تام وبدون تشويه -->
+          <!-- نافذة معاينة الفيديو الثابتة المستقرة 100% بدون شاشة سوداء -->
           <div id="plyrPreviewModal" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <div class="bg-slate-900 rounded-3xl p-4 md:p-5 w-full max-w-3xl border border-slate-800 space-y-3 shadow-2xl">
               <div class="flex justify-between items-center text-white px-2">
@@ -633,14 +607,11 @@
                 <button onclick="closePlyrPreview()" class="text-slate-400 hover:text-rose-400 font-bold text-2xl leading-none transition">&times;</button>
               </div>
               
-              <!-- مسرح الفيديو بنسبة 16:9 أصلية تماماً مع عازل الأحداث المباشر -->
-              <div class="pure-video-stage" id="pureVideoStageBox">
-                <div class="pure-event-interceptor" onclick="handleDirectPlayToggle()"></div>
-                <div id="plyrPlayerMount"></div>
-              </div>
+              <!-- مسرح الفيديو النظيف -->
+              <div id="plyrPlayerMount"></div>
               
               <div class="text-[11px] text-slate-400 text-center font-medium">
-                بث فيديو مباشر محمي عبر مشغل منصة رَقِـيـبْ الذكي
+                بث فيديو مباشر آمن عبر منصة رَقِـيـبْ الذكية
               </div>
             </div>
           </div>
@@ -679,7 +650,6 @@
             </div>
           </div>
 
-          <!-- Grade Sheet Modal for Exam -->
           <div id="gradeSheetModal" class="hidden fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4">
             <div class="bg-white rounded-3xl p-5 md:p-6 w-full max-w-lg shadow-2xl border border-slate-200 space-y-3 text-right max-h-[85vh] flex flex-col">
               <div class="flex justify-between items-center border-b pb-2">
@@ -772,7 +742,7 @@
           <div id="profAttendanceHistory" class="max-h-32 overflow-y-auto space-y-1 p-2 border rounded-xl bg-slate-50 text-xs"></div>
         </div>
 
-        <button onclick="closeStudent360Modal()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl text-xs md:text-sm btn-press">إغلاق</button>
+        <button onclick="closeStudent360Modal()" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl text-xs md:text-sm btn-press">إلغاء</button>
       </div>
     </div>
 
@@ -848,7 +818,6 @@
     let isCameraScanning = false;
     let activeGradingExam = null;
     let activeLessonForAccess = null;
-    let currentPlyrInstance = null;
 
     const gradesList = [
       "KG1", "KG2",
@@ -859,7 +828,6 @@
 
     const daysArabic = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 
-    // دالة الاتصال الموحدة المتوافقة مع معايير المنظومة
     async function sendApiRequest(url, payload) {
       try {
         if (currentTeacher && currentTeacher.sheetId) {
@@ -1055,7 +1023,6 @@
       return (match && match[2].length === 11) ? match[2] : null;
     }
 
-    // --- SESSIONS & REAL-TIME QR ---
     function switchAttendanceSubtab(sub) {
       const btnActive = document.getElementById("subtabBtnActive");
       const btnHistory = document.getElementById("subtabBtnHistory");
@@ -1467,7 +1434,6 @@
       document.getElementById("historyDetailModal")?.classList.add("hidden");
     }
 
-    // --- STUDENTS TAB LOGIC ---
     function renderStudentsTab() {
       const container = document.getElementById("allStudentsList");
       const paySelect = document.getElementById("payStudentSelect");
@@ -1715,7 +1681,6 @@
       document.getElementById("student360Modal")?.classList.add("hidden");
     }
 
-    // --- CLASSES LOGIC ---
     function renderClassesTab() {
       const container = document.getElementById("classesList");
       if (!container) return;
@@ -1844,7 +1809,6 @@
       hideLoader();
     }
 
-    // --- PAYMENTS LOGIC ---
     function renderPaymentsTab() {
       const container = document.getElementById("paymentsList");
       if (!container) return;
@@ -1952,7 +1916,7 @@
           if (clean.length === 10 && clean.startsWith('1')) clean = '0' + clean;
           if (clean.startsWith('0')) clean = '20' + clean.substring(1);
 
-          const msg = `سند قبض نقدية - الأستاذ ${currentTeacher.name} 🧾:\nتم استلام: ${amountPaid} ج.م\nللطالب: ${std.name}\nنوع السداد: ${paymentType}\nالمتبقي: ${remaining} ج.م\nرقم الإيصال: ${receiptId}`;
+          const msg = `سند قبض نقدية - الأستاذ ${currentTeacher.name} 🧾:\nتم استلاست: ${amountPaid} ج.م\nللطالب: ${std.name}\nنوع السداد: ${paymentType}\nالمتبقي: ${remaining} ج.م\nرقم الإيصال: ${receiptId}`;
           if (confirm("✅ تم تسجيل الإيصال! هل ترغب في فتح الواتساب لإرسال الإيصال لولي الأمر الآن؟")) {
             window.open(`https://wa.me/${clean}?text=${encodeURIComponent(msg)}`, '_blank');
           }
@@ -1963,7 +1927,6 @@
       hideLoader();
     }
 
-    // --- LESSONS & STABLE PURE PREVIEW ENGINE ---
     function renderLessonsTab() {
       const container = document.getElementById("lessonsList");
       if (!container) return;
@@ -2097,7 +2060,6 @@
       hideLoader();
     }
 
-    // إدارة الصلاحيات للطلاب
     function openLessonAccessModal(lessonId) {
       activeLessonForAccess = allLessons.find(l => l.lessonId === lessonId);
       if (!activeLessonForAccess) return;
@@ -2206,7 +2168,7 @@
       hideLoader();
     }
 
-    // --- الحل النهائي المستقر تماماً لمعاينة الفيديو بدون شاشة سوداء ومع طبقة حماية الشعار ---
+    // --- الحل الجذري والنهائي 100% لمعاينة الفيديو بدون أي شاشة سوداء تماماً ---
     function previewLessonVideo(lessonId) {
       const lesson = allLessons.find(l => l.lessonId === lessonId);
       if (!lesson) return;
@@ -2223,34 +2185,28 @@
       modal.classList.remove("hidden");
 
       const mount = document.getElementById("plyrPlayerMount");
-      
-      // تفريغ أي عنصر قديم لمنع التداخل أو حدوث شاشة سوداء
       mount.innerHTML = "";
 
-      // حقن الإطار المباشر المستقر مع طبقة درع الحماية العلوية لحجب شعار يوتيوب
-      mount.innerHTML = `
-        <div style="position: relative; width: 100%; height: 100%; background: #000; border-radius: 1rem; overflow: hidden;">
-          
-          <!-- طبقة حماية شفافة تغطي الجزء العلوي لمنع النقر على شعار يوتيوب أو الخروج للخارج -->
-          <div style="position: absolute; top: 0; left: 0; width: 100%; height: 75%; z-index: 40; background: transparent;"></div>
-
-          <iframe
-            src="https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&controls=1"
-            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowfullscreen
-          ></iframe>
-        </div>
-      `;
-
-      currentPlyrInstance = null;
+      // استخدام المهلة الزمنية لضمان رندر الأبعاد في الـ DOM تماماً وتجاوز الشاشة السوداء
+      setTimeout(() => {
+        mount.innerHTML = `
+          <div class="clean-video-container">
+            <!-- درع حماية شفاف لحجب النقر فوق شعار يوتيوب العلوي -->
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 75%; z-index: 50; background: transparent;"></div>
+            
+            <iframe
+              src="https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&controls=1"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+            ></iframe>
+          </div>
+        `;
+      }, 50);
     }
 
     function closePlyrPreview() {
       const mount = document.getElementById("plyrPlayerMount");
-      if (mount) mount.innerHTML = ""; // تفريغ الإطار تماماً لإيقاف الفيديو والصوت فور الإغلاق
-      
-      currentPlyrInstance = null;
+      if (mount) mount.innerHTML = ""; // إيقاف الصوت والفيديو تماماً عند الإغلاق
       document.getElementById("plyrPreviewModal")?.classList.add("hidden");
     }
 

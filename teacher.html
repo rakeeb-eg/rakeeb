@@ -1963,7 +1963,7 @@
       hideLoader();
     }
 
-    // --- LESSONS & PURE 16:9 PLYR ENGINE ---
+    // --- LESSONS & STABLE PURE PREVIEW ENGINE ---
     function renderLessonsTab() {
       const container = document.getElementById("lessonsList");
       if (!container) return;
@@ -2206,9 +2206,8 @@
       hideLoader();
     }
 
-    // --- التعديل الهندسي النهائي لمشغل Plyr الصافي (16:9 وبدون Zoom أو ترويسة يوتيوب) ---
-    
-   function previewLessonVideo(lessonId) {
+    // --- الحل النهائي المستقر تماماً لمعاينة الفيديو بدون شاشة سوداء ومع طبقة حماية الشعار ---
+    function previewLessonVideo(lessonId) {
       const lesson = allLessons.find(l => l.lessonId === lessonId);
       if (!lesson) return;
 
@@ -2225,84 +2224,33 @@
 
       const mount = document.getElementById("plyrPlayerMount");
       
-      if (currentPlyrInstance) {
-        try { currentPlyrInstance.destroy(); } catch(e) {}
-        currentPlyrInstance = null;
-      }
+      // تفريغ أي عنصر قديم لمنع التداخل أو حدوث شاشة سوداء
+      mount.innerHTML = "";
 
-      // حقن الفيديو مع تفعيل طبقة الحماية التي تختفي وتظهر بذكاء أو تغطي الشعار تماماً بعد التحميل
+      // حقن الإطار المباشر المستقر مع طبقة درع الحماية العلوية لحجب شعار يوتيوب
       mount.innerHTML = `
         <div style="position: relative; width: 100%; height: 100%; background: #000; border-radius: 1rem; overflow: hidden;">
           
-          <!-- طبقة درع التفاعل (Shield) تمنع النقر فوق شعار يوتيوب العلوي بعد التحميل -->
-          <div id="ytShieldOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 75%; z-index: 30; background: transparent; cursor: pointer;" onclick="if(currentPlyrInstance) currentPlyrInstance.togglePlay();"></div>
+          <!-- طبقة حماية شفافة تغطي الجزء العلوي لمنع النقر على شعار يوتيوب أو الخروج للخارج -->
+          <div style="position: absolute; top: 0; left: 0; width: 100%; height: 75%; z-index: 40; background: transparent;"></div>
 
-          <div class="plyr__video-embed" id="player">
-            <iframe
-              id="ytFrameTarget"
-              src="https://www.youtube-nocookie.com/embed/${ytId}?origin=${window.location.origin}&amp;iv_load_policy=3&amp;modestbranding=1&amp;playsinline=1&amp;showinfo=0&amp;rel=0&amp;enablejsapi=1"
-              allowfullscreen
-              allowtransparency
-              allow="autoplay"
-              onload="onYouTubeFrameLoaded()"
-            ></iframe>
-          </div>
+          <iframe
+            src="https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&controls=1"
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+          ></iframe>
         </div>
       `;
 
-      // تشغيل مشغل Plyr للتحكم السفلي
-      currentPlyrInstance = new Plyr('#player', {
-        controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'fullscreen'],
-        youtube: { noCookie: true, rel: 0, modestbranding: 1, iv_load_policy: 3 }
-      });
-    }
-
-    // دالة تعمل فور اكتمال تحميل الـ iframe لضمان إخفاء أي تفاصيل متعلقة بيوتيوب
-    function onYouTubeFrameLoaded() {
-      const shield = document.getElementById("ytShieldOverlay");
-      if (shield) {
-        // تأكيد تفعيل الحماية وإخفاء الترويسة تماماً بعد تحميل الفريم
-        shield.style.display = "block";
-      }
-    }
-    
-    function closePlyrPreview() {
-      if (currentPlyrInstance) {
-        try {
-          currentPlyrInstance.stop();
-          currentPlyrInstance.destroy();
-        } catch(e) {}
-        currentPlyrInstance = null;
-      }
-      document.getElementById("plyrPreviewModal")?.classList.add("hidden");
-    } 
-
-    function closePlyrPreview() {
-      const mount = document.getElementById("plyrPlayerMount");
-      if (mount) mount.innerHTML = ""; // إيقاف الفيديو والصوت فوراً عند الإغلاق
-      document.getElementById("plyrPreviewModal")?.classList.add("hidden");
+      currentPlyrInstance = null;
     }
 
     function closePlyrPreview() {
       const mount = document.getElementById("plyrPlayerMount");
-      if (mount) mount.innerHTML = ""; // إيقاف الفيديو والصوت فوراً عند الإغلاق
-      document.getElementById("plyrPreviewModal")?.classList.add("hidden");
-    }
-
-    function handleDirectPlayToggle() {
-      if (currentPlyrInstance) {
-        currentPlyrInstance.togglePlay();
-      }
-    }
-
-    function closePlyrPreview() {
-      if (currentPlyrInstance) {
-        try {
-          currentPlyrInstance.stop();
-          currentPlyrInstance.destroy();
-        } catch(e) {}
-        currentPlyrInstance = null;
-      }
+      if (mount) mount.innerHTML = ""; // تفريغ الإطار تماماً لإيقاف الفيديو والصوت فور الإغلاق
+      
+      currentPlyrInstance = null;
       document.getElementById("plyrPreviewModal")?.classList.add("hidden");
     }
 

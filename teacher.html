@@ -2208,7 +2208,7 @@
 
     // --- التعديل الهندسي النهائي لمشغل Plyr الصافي (16:9 وبدون Zoom أو ترويسة يوتيوب) ---
     
-    function previewLessonVideo(lessonId) {
+   function previewLessonVideo(lessonId) {
       const lesson = allLessons.find(l => l.lessonId === lessonId);
       if (!lesson) return;
 
@@ -2220,7 +2220,6 @@
 
       document.getElementById("plyrPreviewTitle").innerText = lesson.title;
       
-      // إظهار نافذة المعاينة أولاً
       const modal = document.getElementById("plyrPreviewModal");
       modal.classList.remove("hidden");
 
@@ -2231,25 +2230,42 @@
         currentPlyrInstance = null;
       }
 
-      // بناء العنصر بالطريقة القياسية المدعومة رسمياً من Plyr لضمان عدم ظهور شاشة سوداء
+      // حقن الفيديو مع تفعيل طبقة الحماية التي تختفي وتظهر بذكاء أو تغطي الشعار تماماً بعد التحميل
       mount.innerHTML = `
-        <div class="plyr__video-embed" id="player">
-          <iframe
-            src="https://www.youtube-nocookie.com/embed/${ytId}?origin=${window.location.origin}&amp;iv_load_policy=3&amp;modestbranding=1&amp;playsinline=1&amp;showinfo=0&amp;rel=0&amp;enablejsapi=1"
-            allowfullscreen
-            allowtransparency
-            allow="autoplay"
-          ></iframe>
+        <div style="position: relative; width: 100%; height: 100%; background: #000; border-radius: 1rem; overflow: hidden;">
+          
+          <!-- طبقة درع التفاعل (Shield) تمنع النقر فوق شعار يوتيوب العلوي بعد التحميل -->
+          <div id="ytShieldOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 75%; z-index: 30; background: transparent; cursor: pointer;" onclick="if(currentPlyrInstance) currentPlyrInstance.togglePlay();"></div>
+
+          <div class="plyr__video-embed" id="player">
+            <iframe
+              id="ytFrameTarget"
+              src="https://www.youtube-nocookie.com/embed/${ytId}?origin=${window.location.origin}&amp;iv_load_policy=3&amp;modestbranding=1&amp;playsinline=1&amp;showinfo=0&amp;rel=0&amp;enablejsapi=1"
+              allowfullscreen
+              allowtransparency
+              allow="autoplay"
+              onload="onYouTubeFrameLoaded()"
+            ></iframe>
+          </div>
         </div>
       `;
 
-      // تشغيل مشغل Plyr مباشرة
+      // تشغيل مشغل Plyr للتحكم السفلي
       currentPlyrInstance = new Plyr('#player', {
         controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'fullscreen'],
         youtube: { noCookie: true, rel: 0, modestbranding: 1, iv_load_policy: 3 }
       });
     }
 
+    // دالة تعمل فور اكتمال تحميل الـ iframe لضمان إخفاء أي تفاصيل متعلقة بيوتيوب
+    function onYouTubeFrameLoaded() {
+      const shield = document.getElementById("ytShieldOverlay");
+      if (shield) {
+        // تأكيد تفعيل الحماية وإخفاء الترويسة تماماً بعد تحميل الفريم
+        shield.style.display = "block";
+      }
+    }
+    
     function closePlyrPreview() {
       if (currentPlyrInstance) {
         try {

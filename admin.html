@@ -175,11 +175,30 @@
     let teacherRequests = [];
     let allStudents = [];
 
-    function showLoader(txt = "جاري التحميل...") {
+    function showLoader(txt = "جاري المعالجة...") {
       document.getElementById("loaderText").innerText = txt;
       document.getElementById("loader").classList.remove("hidden");
     }
-    function hideLoader() { document.getElementById("loader").classList.add("hidden"); }
+    function hideLoader() { 
+      document.getElementById("loader").classList.add("hidden"); 
+    }
+
+    // دالة الاتصال الموحدة المتوافقة مع معايير المنظومة
+    async function sendApiRequest(payload) {
+      try {
+        const res = await fetch(CORE_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          redirect: "follow",
+          body: JSON.stringify(payload)
+        });
+        const text = await res.text();
+        return JSON.parse(text);
+      } catch (err) {
+        console.error("API Error:", err);
+        return { status: "error", message: err.toString() };
+      }
+    }
 
     window.onload = () => {
       if (sessionStorage.getItem("raqib_admin_auth") === "true") {
@@ -194,7 +213,6 @@
       const u = document.getElementById("adminUser").value.trim();
       const p = document.getElementById("adminPass").value.trim();
 
-      // بيانات مرور الأدمن
       if (u === "admin" && p === "raqib2026") {
         sessionStorage.setItem("raqib_admin_auth", "true");
         document.getElementById("loginScreen").classList.add("hidden");
@@ -213,12 +231,7 @@
     async function loadAdminData() {
       showLoader("جاري مزامنة بيانات الإدارة...");
       try {
-        const res = await fetch(CORE_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "getAdminData" })
-        });
-        const data = await res.json();
+        const data = await sendApiRequest({ action: "getAdminData" });
 
         if (data && data.status === "success") {
           teacherRequests = data.teacherRequests || [];
@@ -227,6 +240,8 @@
           updateAdminStats();
           renderTeacherRequests();
           renderStudentSubscriptions();
+        } else {
+          alert(data.message || "تعذر جلب البيانات");
         }
       } catch (err) {
         alert("حدث خطأ أثناء جلب البيانات من الخادم.");
@@ -259,8 +274,9 @@
 
       container.innerHTML = reversed.map(r => {
         const isPending = r.status === "Pending";
-        const cleanPhone = r.phone.replace(/[^0-9]/g, '');
-        const waLink = `https://wa.me/2${cleanPhone.startsWith('0') ? cleanPhone.substring(1) : cleanPhone}?text=${encodeURIComponent(`مرحباً أستاذ ${r.name}، بخصوص طلب انضمامكم لمنظومة رَقِـيـبْ لإدارة مجموعات مادة (${r.subject})...`)}`;
+        const cleanPhone = (r.phone || "").replace(/[^0-9]/g, '');
+        const waNumber = cleanPhone.startsWith('0') ? '2' + cleanPhone : cleanPhone;
+        const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(`مرحباً أستاذ ${r.name}، بخصوص طلب انضمامكم لمنظومة رَقِـيـبْ لإدارة مجموعات مادة (${r.subject})...`)}`;
 
         return `
           <div class="glass-card p-5 rounded-2xl border space-y-3">
@@ -280,7 +296,8 @@
             <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-slate-300">
               <div>📞 الهاتف: <span class="font-bold text-white">${r.phone}</span></div>
               <div>👥 الطلاب المقدرين: <span class="font-bold text-white">${r.studentsCount}</span></div>
-              ${r.notes ? `<div class="col-span-2 md:col-span-1 text-slate-400">📝 ملاحظة: ${r.notes}</div>` : ''}
+              <div>🔑 الكود: <span class="font-mono text-indigo-300 font-bold">${r.requestId}</span></div>
+              ${r.notes ? `<div class="col-span-2 text-slate-400">📝 ملاحظة: ${r.notes}</div>` : ''}
             </div>
 
             <div class="flex justify-end items-center gap-2 pt-2 border-t border-slate-800/80">
@@ -291,7 +308,9 @@
                 <button onclick="approveTeacherRequest('${r.requestId}', '${r.name}')" class="px-4 py-1.5 luxury-gradient text-white rounded-xl text-xs font-bold shadow transition btn-press">
                   اعتماد وتفعيل المعلم ✓
                 </button>
-              ` : ''}
+              ` : `
+                <span class="text-[10px] text-slate-500 font-mono">Sheet ID: ${r.sheetId ? r.sheetId.substring(0, 10) + '...' : 'مرتبط بالماستر'}</span>
+              `}
             </div>
           </div>
         `;
@@ -299,21 +318,16 @@
     }
 
     async function approveTeacherRequest(requestId, teacherName) {
-      if (!confirm(`هل أنت متأكد من اعتماد الأستاذ (${teacherName})؟`)) return;
+      if (!confirm(`هل أنت متأكد من اعتماد الأستاذ (${teacherName}) وإنشاء الشيت المستقل له؟`)) return;
 
-      showLoader("جاري اعتماد المعلم...");
+      showLoader("جاري اعتماد المعلم وتجهيز الشيت...");
       try {
-        const res = await fetch(CORE_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "approveTeacherRequest", requestId })
-        });
-        const result = await res.json();
+        const result = await sendApiRequest({ action: "approveTeacherRequest", requestId });
         if (result && result.status === "success") {
-          alert("✅ تم اعتماد المعلم بنجاح وتحديث حالته.");
+          alert("✅ تم اعتماد المعلم بنجاح وتجهيز ملف الشيت الخاص به.");
           loadAdminData();
         } else {
-          alert("❌ تعذر الاعتماد.");
+          alert(result.message || "❌ تعذر الاعتماد.");
         }
       } catch (e) {
         alert("حدث خطأ أثناء الاتصال.");
@@ -329,7 +343,7 @@
       const list = filtered || allStudents;
 
       if (list.length === 0) {
-        container.innerHTML = '<p class="text-slate-500 text-xs text-center py-8">لا يوجد طلاب مطابقين للبحث.</p>';
+        container.innerHTML = '<p class="text-slate-500 text-xs text-center py-8">لا يوجد طلاب مسجلين حالياً.</p>';
         return;
       }
 
@@ -366,7 +380,10 @@
         return;
       }
       const filtered = allStudents.filter(s => 
-        s.name.toLowerCase().includes(q) || s.id.toString().includes(q) || (s.phone && s.phone.includes(q))
+        (s.name && s.name.toLowerCase().includes(q)) || 
+        (s.id && s.id.toString().includes(q)) || 
+        (s.phone && s.phone.includes(q)) ||
+        (s.parentPhone && s.parentPhone.includes(q))
       );
       renderStudentSubscriptions(filtered);
     }
@@ -374,17 +391,19 @@
     async function toggleStudentSubscription(studentId, newStatus) {
       showLoader("جاري تحديث حالة اشتراك الطالب...");
       try {
-        const res = await fetch(CORE_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "updateStudentSubscription", studentId, status: newStatus })
+        const result = await sendApiRequest({
+          action: "updateStudentSubscription",
+          studentId: studentId,
+          status: newStatus
         });
-        const result = await res.json();
+
         if (result && result.status === "success") {
           const std = allStudents.find(s => s.id.toString() === studentId.toString());
           if (std) std.subscriptionActive = newStatus;
           updateAdminStats();
           renderStudentSubscriptions();
+        } else {
+          alert(result.message || "تعذر تحديث الاشتراك");
         }
       } catch(e) {
         alert("حدث خطأ أثناء التحديث.");

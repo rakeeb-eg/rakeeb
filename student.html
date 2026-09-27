@@ -3,29 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>بوابة الطالب - رَقِـيـبْ Enterprise</title>
-  
-  <!-- PWA & Mobile Optimization -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#4f46e5">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="رقيب">
-  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135755.png">
+  <title>بوابة الطالب - رَقِـيـبْ</title>
 
-  <!-- Frameworks & Fonts -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   
-  <!-- QR Code Library -->
+  <!-- مكتبة توليد الـ QR Code -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
+  <!-- مكتبة ومشغل Plyr -->
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+  <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+
   <style>
-    * { font-family: 'Cairo', system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+    * { font-family: 'Cairo', system-ui, -apple-system, sans-serif; }
     body { background-color: #0b0f19; color: #f8fafc; }
 
     .glass-card {
@@ -46,15 +40,54 @@
       border: 3px solid rgba(255, 255, 255, 0.15);
       border-radius: 50%;
       border-top-color: #6366f1;
-      width: 22px;
-      height: 22px;
+      width: 20px;
+      height: 20px;
       animation: spin 0.7s linear infinite;
+      display: inline-block;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .tab-content { display: none; }
-    .tab-content.active { display: block; animation: smoothFade 0.25s ease-out; }
-    @keyframes smoothFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    /* ========================================================= */
+    /* معمارية المشغل الصافي والثابت 16:9 المطابقة لواجهة الأستاذ */
+    /* ========================================================= */
+    :root {
+      --plyr-color-main: #4f46e5;
+      --plyr-video-background: #000000;
+    }
+
+    .pure-video-stage {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%; /* نسبة 16:9 القياسية */
+      background: #000;
+      border-radius: 1.5rem;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    .pure-video-stage .plyr {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .pure-video-stage iframe {
+      width: 100% !important;
+      height: 100% !important;
+      border: 0 !important;
+    }
+
+    /* طبقة الحماية العازلة لمنع التلاعب أو النقر على شعار يوتيوب */
+    .pure-event-interceptor {
+      position: absolute;
+      inset: 0;
+      bottom: 50px;
+      z-index: 5;
+      cursor: pointer;
+      background: transparent;
+    }
 
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: #0b0f19; }
@@ -66,473 +99,601 @@
   <!-- OVERLAY LOADER -->
   <div id="loader" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex flex-col items-center justify-center text-white">
     <div class="spinner mb-3"></div>
-    <div id="loaderText" class="text-xs font-bold text-slate-300 tracking-wide">جاري الاتصال بالسحابة...</div>
+    <div id="loaderText" class="text-xs font-bold text-slate-300">جاري معالجة البيانات...</div>
   </div>
 
   <!-- 1. LOGIN SCREEN -->
   <div id="loginScreen" class="fixed inset-0 bg-[#090d16] z-40 flex items-center justify-center p-4">
-    <div class="glass-card rounded-[32px] p-7 md:p-8 w-full max-w-sm shadow-2xl border border-white/10 text-center space-y-6">
+    <div class="glass-card rounded-[32px] p-8 w-full max-w-sm shadow-2xl border border-white/10 text-center space-y-6">
       <div>
         <div class="w-16 h-16 rounded-2xl luxury-gradient flex items-center justify-center text-white text-2xl mx-auto shadow-lg shadow-indigo-500/25 mb-3">
           <i class="fa-solid fa-graduation-cap"></i>
         </div>
         <h2 class="text-2xl font-black text-white">بوابة الطالب الذكية</h2>
-        <p class="text-xs text-slate-400 mt-1">منظومة رَقِـيـبْ الأكاديمية</p>
+        <p class="text-xs text-slate-400 mt-1 font-medium">سجل دخولك لمتابعة حصصك وبطاقتك</p>
       </div>
 
       <form onsubmit="handleStudentLogin(event)" class="space-y-4 text-right">
         <div>
-          <label class="block text-xs font-bold text-slate-300 mb-1">كود الطالب أو رقم الهاتف *</label>
-          <input type="text" id="loginStudentQuery" required placeholder="أدخل كودك أو رقم هاتفك..." class="w-full p-3.5 border border-slate-700 rounded-xl bg-slate-900/80 text-white font-bold text-xs md:text-sm outline-none focus:border-indigo-500 transition">
+          <label class="block text-xs font-bold text-slate-300 mb-1">كود المعلم المعتمد *</label>
+          <input type="text" id="loginTeacherCode" required placeholder="مثال: REQ-10023 أو هاتف الأستاذ" class="w-full p-3.5 border border-slate-700 rounded-xl bg-slate-900/80 text-white font-bold text-xs md:text-sm outline-none focus:border-indigo-500 transition text-center tracking-wider font-mono">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-300 mb-1">كود الطالب الرقمي *</label>
+          <input type="number" id="loginStudentId" required placeholder="مثال: 1001" class="w-full p-3.5 border border-slate-700 rounded-xl bg-slate-900/80 text-white font-bold text-xs md:text-sm outline-none focus:border-indigo-500 transition text-center tracking-wider font-mono">
         </div>
 
-        <button type="submit" class="w-full luxury-gradient hover:opacity-95 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-600/30 transition text-xs md:text-sm btn-press">
-          دخول البوابة وتثبيت الحساب 🚀
+        <button type="submit" class="w-full luxury-gradient hover:opacity-95 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-600/30 transition text-xs md:text-sm btn-press flex items-center justify-center gap-2">
+          <span>دخول حسابي</span>
+          <i class="fa-solid fa-arrow-left text-xs"></i>
         </button>
       </form>
-      <div class="text-[11px] text-slate-500">إذا لم تكن مسجلاً، يرجى مراجعة أستاذك لإضافتك أولاً.</div>
     </div>
   </div>
 
-  <!-- 2. ANNUAL 10 EGP SUBSCRIPTION MODAL -->
-  <div id="paySubscriptionModal" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-50 flex items-center justify-center p-4">
-    <div class="glass-card rounded-[32px] p-6 md:p-8 w-full max-w-md shadow-2xl border border-amber-500/30 text-center space-y-5">
-      <div class="w-14 h-14 bg-amber-500/10 text-amber-400 rounded-2xl flex items-center justify-center mx-auto text-2xl shadow-inner">
-        <i class="fa-solid fa-id-badge"></i>
-      </div>
-      <div>
-        <h3 class="font-black text-xl text-white">تفعيل بطاقة الطالب الذكية</h3>
-        <p class="text-xs text-slate-400 mt-1">رسم سنوي رمزي لتغطية خدمات المنصة والـ QR Code السحابي</p>
+  <!-- 2. ACCESS VERIFICATION & PENDING MODAL -->
+  <div id="studentAccessModal" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="glass-card rounded-[32px] p-7 w-full max-w-sm shadow-2xl border border-white/10 text-center space-y-5">
+      
+      <!-- STATE A: ACCOUNT LOCKED (NEEDS VERIFICATION) -->
+      <div id="stateRequestAccess" class="space-y-4">
+        <div class="w-16 h-16 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-2xl flex items-center justify-center mx-auto text-2xl shadow-inner">
+          <i class="fa-solid fa-user-shield"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-black text-white">تفعيل حساب الطالب</h3>
+          <p class="text-xs text-slate-400 mt-1.5 leading-relaxed font-medium">
+            أهلاً بك! حسابك يتطلب مراجعة البيانات واعتماد الصلاحيات من إدارة المنظومة لتتمكن من استخدام المنصة.
+          </p>
+        </div>
+
+        <div class="p-3 bg-slate-900/80 rounded-2xl border border-slate-800 text-xs text-slate-300 text-right space-y-1 font-semibold">
+          <div>كود الطالب: <span id="modalStudentCode" class="font-bold text-white font-mono">-</span></div>
+          <div>اسم الطالب: <span id="modalStudentName" class="font-bold text-white">-</span></div>
+        </div>
+
+        <button id="btnSendAccessReq" onclick="sendAccessRequest()" class="w-full luxury-gradient hover:opacity-95 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-600/30 transition text-xs btn-press flex items-center justify-center gap-2">
+          <i class="fa-solid fa-paper-plane"></i>
+          <span>إرسال طلب تفعيل وتأكيد الحساب</span>
+        </button>
+        
+        <button onclick="logoutStudent()" class="text-xs text-slate-500 hover:text-slate-400 transition font-medium">تسجيل الخروج</button>
       </div>
 
-      <div class="p-4 bg-slate-900/60 rounded-2xl border border-slate-800 text-right space-y-3">
-        <div class="flex justify-between items-center text-xs">
-          <span class="text-slate-400">قيمة التفعيل السنوي:</span>
-          <span class="text-amber-400 font-black text-base">10 جنيه مصري فقط</span>
+      <!-- STATE B: REQUEST UNDER REVIEW (PENDING APPROVAL) -->
+      <div id="statePendingApproval" class="hidden space-y-4 py-2">
+        <div class="w-16 h-16 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-2xl flex items-center justify-center mx-auto text-2xl animate-pulse shadow-inner">
+          <i class="fa-solid fa-hourglass-half"></i>
         </div>
-        <div class="flex justify-between items-center text-xs border-t border-slate-800 pt-2">
-          <span class="text-slate-400">فودافون كاش / إنستاباي:</span>
-          <span class="text-white font-mono font-bold select-all bg-slate-800 px-2 py-0.5 rounded">01000000000</span>
+        <div>
+          <h3 class="text-lg font-black text-white">طلبك قيد المراجعة</h3>
+          <p class="text-xs text-slate-400 mt-1.5 leading-relaxed font-medium">
+            تم استلام طلب التفعيل بنجاح ويجري حالياً مراجعته واعتماده من الإدارة. يرجى الانتظار لحين اكتمال التحقق.
+          </p>
+        </div>
+
+        <div class="p-3 bg-amber-500/10 rounded-2xl border border-amber-500/20 text-[11px] text-amber-300 font-bold">
+          ⏳ سيتم فتح المنصة تلقائياً فور اعتماد الحساب من الإدارة.
+        </div>
+
+        <div class="space-y-2 pt-1">
+          <button onclick="checkAccessAgain()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition text-xs btn-press flex items-center justify-center gap-2">
+            <i class="fa-solid fa-rotate-right"></i>
+            <span>تحديث حالة الحساب الآن</span>
+          </button>
+          <button onclick="logoutStudent()" class="w-full bg-transparent hover:bg-slate-900/50 text-slate-400 text-xs py-2 rounded-xl transition">تسجيل الخروج</button>
         </div>
       </div>
 
-      <div class="space-y-2">
-        <button onclick="confirmPaymentWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl text-xs md:text-sm shadow-lg transition btn-press flex items-center justify-center gap-2">
-          <i class="fa-brands fa-whatsapp text-base"></i> إرسال إشعار السداد وتفعيل الحساب
-        </button>
-        <button onclick="logoutStudent()" class="w-full bg-slate-800 text-slate-400 py-2.5 rounded-xl text-xs font-semibold btn-press">
-          خروج مؤقت
-        </button>
-      </div>
     </div>
   </div>
 
-  <!-- 3. MANDATORY INSTALL PWA OVERLAY MODAL -->
-  <div id="pwaInstallModal" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-2xl z-50 flex items-center justify-center p-4">
-    <div class="glass-card rounded-[32px] p-7 w-full max-w-sm border border-indigo-500/40 text-center space-y-5 shadow-2xl">
-      <div class="relative flex items-center justify-center mx-auto">
-        <div class="absolute w-20 h-20 bg-indigo-500/20 rounded-full blur-xl animate-pulse"></div>
-        <div class="w-16 h-16 rounded-2xl luxury-gradient flex items-center justify-center text-white text-3xl shadow-lg shadow-indigo-500/30">
-          <i class="fa-solid fa-mobile-screen"></i>
-        </div>
-      </div>
-
-      <div>
-        <h3 class="font-black text-xl text-white">تثبيت تطبيق "رَقِـيـبْ"</h3>
-        <p class="text-xs text-slate-300 mt-1.5 leading-relaxed font-medium">
-          لضمان سهولة الوصول السريع إلى بطاقتك الذكية، مواعيد الحصص، وإشعارات الدرجات، يلزم تثبيت التطبيق على الشاشة الرئيسية.
-        </p>
-      </div>
-
-      <!-- Android / Chrome Button -->
-      <div id="androidInstallBox" class="space-y-2">
-        <button onclick="triggerPwaInstall()" class="w-full luxury-gradient text-white font-black py-4 rounded-2xl text-xs md:text-sm shadow-xl shadow-indigo-600/30 transition btn-press flex items-center justify-center gap-2">
-          <i class="fa-solid fa-download"></i> تثبيت التطبيق على الهاتف الآن 📲
-        </button>
-      </div>
-
-      <!-- iOS / Safari Guide -->
-      <div id="iosInstallGuide" class="hidden bg-slate-900/90 border border-indigo-500/30 p-4 rounded-2xl text-right text-xs space-y-2 text-slate-300">
-        <div class="font-bold text-indigo-300 text-center border-b border-slate-800 pb-1.5">مستخدمي iPhone (Safari):</div>
-        <div class="flex items-center gap-2">
-          <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 font-bold flex items-center justify-center text-[10px]">1</span>
-          <span>اضغط على زر المشاركة <i class="fa-solid fa-arrow-up-from-bracket text-indigo-400"></i> بالأسفل.</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 font-bold flex items-center justify-center text-[10px]">2</span>
-          <span>اختر <b>"إضافة إلى الصفحة الرئيسية"</b> (Add to Home Screen).</span>
-        </div>
-        <button onclick="dismissPwaModal()" class="w-full mt-2 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 py-2 rounded-xl text-[11px] font-bold">
-          تمت الإضافة بنجاح ✓
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 4. MAIN STUDENT DASHBOARD -->
-  <div id="studentApp" class="hidden flex-1 flex flex-col max-w-4xl w-full mx-auto p-4 md:p-6 space-y-5 pb-24">
+  <!-- 3. MAIN STUDENT DASHBOARD (ACTIVE ACCOUNT) -->
+  <div id="studentApp" class="hidden flex-1 flex flex-col max-w-2xl w-full mx-auto p-4 md:p-6 space-y-5 pb-16">
     
     <!-- HEADER -->
-    <header class="glass-card p-4 rounded-3xl flex justify-between items-center border border-white/10 shadow-lg">
+    <header class="glass-card p-4 md:p-5 rounded-3xl flex justify-between items-center border border-white/10 shadow-lg">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl luxury-gradient flex items-center justify-center text-white text-lg font-bold shadow-md">
+        <div class="w-10 h-10 rounded-xl luxury-gradient flex items-center justify-center text-white text-lg font-bold shadow-md shadow-indigo-500/20">
           <i class="fa-solid fa-user-graduate"></i>
         </div>
         <div>
-          <h2 class="font-black text-sm md:text-base text-white" id="headerStudentName">اسم الطالب</h2>
-          <span class="text-[10px] text-indigo-300 font-semibold" id="headerStudentGrade">الصف الدراسي</span>
+          <h1 class="font-black text-sm md:text-base text-white" id="headerStudentName">اسم الطالب</h1>
+          <span class="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            حساب معتمد ونشط ✓
+          </span>
         </div>
       </div>
-      <button onclick="logoutStudent()" class="text-xs bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 px-3.5 py-1.5 rounded-xl font-bold transition btn-press flex items-center gap-1.5">
-        <i class="fa-solid fa-power-off"></i> خروج
+      <button onclick="logoutStudent()" class="text-xs bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 px-3 py-1.5 rounded-xl font-bold transition btn-press flex items-center gap-1.5">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i> خروج
       </button>
     </header>
 
-    <!-- NAVIGATION TABS -->
-    <nav class="flex bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 gap-1 text-xs font-bold text-slate-400">
-      <button onclick="switchStudentTab('card')" class="student-nav-btn flex-1 py-2.5 rounded-xl text-white bg-indigo-600/90 shadow transition" data-tab="card">
-        <i class="fa-solid fa-id-card ml-1"></i> بطاقتي
-      </button>
-      <button onclick="switchStudentTab('lessons')" class="student-nav-btn flex-1 py-2.5 rounded-xl hover:text-white transition" data-tab="lessons">
-        <i class="fa-solid fa-video ml-1"></i> الحصص
-      </button>
-      <button onclick="switchStudentTab('exams')" class="student-nav-btn flex-1 py-2.5 rounded-xl hover:text-white transition" data-tab="exams">
-        <i class="fa-solid fa-file-signature ml-1"></i> الامتحانات
-      </button>
-      <button onclick="switchStudentTab('attendance')" class="student-nav-btn flex-1 py-2.5 rounded-xl hover:text-white transition" data-tab="attendance">
-        <i class="fa-solid fa-clipboard-user ml-1"></i> الحضور
-      </button>
-    </nav>
-
-    <!-- 1. SMART CARD TAB -->
-    <section id="tab-card" class="tab-content active space-y-4">
-      <div class="luxury-gradient text-white p-6 md:p-8 rounded-[32px] shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
-        <div class="space-y-2 text-center md:text-right">
-          <span class="text-[10px] bg-white/20 px-3 py-1 rounded-full font-bold uppercase tracking-wider">بطاقة الحضور الرقمية</span>
-          <h3 class="text-2xl font-black mt-2" id="cardName">-</h3>
-          <div class="text-xs text-indigo-100 font-semibold" id="cardId">الكود الرقمي: -</div>
-          <div class="text-xs text-indigo-200" id="cardGroup">المجموعة: -</div>
-          <p class="text-[11px] text-indigo-200/80 pt-2">أظهر هذا الكود للأستاذ أو المساعد عند دخول الحصة لمسحه مباشرة[cite: 1].</p>
+    <!-- SMART ID CARD WITH REALTIME QR -->
+    <div class="luxury-gradient rounded-3xl p-6 shadow-2xl shadow-indigo-900/30 text-white relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-5 border border-white/10">
+      <div class="absolute -right-8 -bottom-8 w-36 h-36 bg-white/5 rounded-full blur-2xl"></div>
+      
+      <div class="space-y-2 text-center sm:text-right flex-1">
+        <span class="text-[10px] bg-white/15 px-3 py-1 rounded-full font-bold uppercase tracking-wider">بطاقة الطالب الذكية</span>
+        <h2 class="text-xl font-black" id="cardStudentName">-</h2>
+        <div class="text-xs text-indigo-100 font-semibold space-y-0.5">
+          <div>كود الطالب: <span class="font-mono font-bold text-white text-sm" id="cardStudentId">-</span></div>
+          <div>المجموعة: <span class="font-bold text-white" id="cardGroupName">-</span></div>
+          <div>الصف الدراسي: <span class="font-bold text-white" id="cardGrade">-</span></div>
         </div>
-        <div id="cardQrCode" class="bg-white p-3 rounded-2xl shadow-xl flex items-center justify-center"></div>
+        <p class="text-[10px] text-indigo-200/80 pt-1">امسح الكود أثناء دخول الحصة لتسجيل الحضور الفوري.</p>
       </div>
-    </section>
 
-    <!-- 2. LESSONS TAB -->
-    <section id="tab-lessons" class="tab-content space-y-3">
-      <h3 class="font-bold text-sm text-slate-300">أرشيف شروحات ومراجعات الفيديو:</h3>
-      <div id="studentLessonsList" class="space-y-2.5">
-        <p class="text-slate-500 text-xs text-center py-6">لا توجد حصص مسجلة متاحة حالياً.</p>
+      <div class="bg-white p-3 rounded-2xl shadow-xl flex flex-col items-center justify-center">
+        <div id="studentQRCodeContainer"></div>
+        <span class="text-[9px] text-slate-800 font-bold mt-1.5 font-mono">SCAN ME</span>
       </div>
-    </section>
+    </div>
 
-    <!-- 3. EXAMS TAB -->
-    <section id="tab-exams" class="tab-content space-y-3">
-      <h3 class="font-bold text-sm text-slate-300">نتائج امتحاناتي والكويزات:</h3>
-      <div id="studentExamsList" class="space-y-2.5">
-        <p class="text-slate-500 text-xs text-center py-6">لم يتم رصد درجات امتحانات لك حتى الآن.</p>
+    <!-- QUICK METRICS -->
+    <div class="grid grid-cols-2 gap-3">
+      <div class="glass-card p-4 rounded-2xl border border-white/10 text-right">
+        <div class="text-slate-400 text-xs font-semibold mb-1 flex items-center gap-1.5">
+          <i class="fa-solid fa-clipboard-check text-indigo-400"></i> نسبة الحضور
+        </div>
+        <div class="text-xl font-black text-white" id="metricAttRate">0%</div>
+        <div class="text-[10px] text-slate-400 mt-0.5" id="metricAttCount">0 حصص مسجلة</div>
       </div>
-    </section>
 
-    <!-- 4. ATTENDANCE TAB -->
-    <section id="tab-attendance" class="tab-content space-y-3">
-      <div class="flex justify-between items-center">
-        <h3 class="font-bold text-sm text-slate-300">سجل حضوري وغيابي:</h3>
-        <span id="studentAttendanceRate" class="text-xs text-indigo-400 font-bold bg-indigo-500/10 px-2.5 py-1 rounded-lg">نسبة الحضور: 0%</span>
+      <div class="glass-card p-4 rounded-2xl border border-white/10 text-right">
+        <div class="text-slate-400 text-xs font-semibold mb-1 flex items-center gap-1.5">
+          <i class="fa-solid fa-wallet text-emerald-400"></i> إجمالي المسدد
+        </div>
+        <div class="text-xl font-black text-emerald-400" id="metricTotalPaid">0 ج.م</div>
+        <div class="text-[10px] text-slate-400 mt-0.5" id="metricLastPayment">لا توجد إيصالات حديثة</div>
       </div>
-      <div id="studentAttendanceList" class="space-y-2">
-        <p class="text-slate-500 text-xs text-center py-6">لا يوجد سجل حضور مسجل.</p>
+    </div>
+
+    <!-- LESSONS SECTION FOR STUDENT -->
+    <div class="glass-card p-5 rounded-3xl border border-white/10 space-y-3 text-right">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+        <h3 class="font-black text-sm text-white flex items-center gap-2">
+          <i class="fa-solid fa-video text-indigo-400"></i> الحصص والشروحات المسجلة
+        </h3>
+        <span class="text-[10px] text-slate-400" id="studentLessonsCountBadge">0 حصص</span>
       </div>
-    </section>
+      <div id="studentLessonsList" class="space-y-2.5 max-h-64 overflow-y-auto text-xs">
+        <p class="text-slate-500 text-center py-4">جاري تحميل الحصص المتاحة...</p>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE HISTORY LIST -->
+    <div class="glass-card p-5 rounded-3xl border border-white/10 space-y-3 text-right">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+        <h3 class="font-black text-sm text-white flex items-center gap-2">
+          <i class="fa-solid fa-calendar-days text-indigo-400"></i> سجل الحصص الأخيرة
+        </h3>
+        <span class="text-[10px] text-slate-400" id="attLogsCountBadge">0 تسجيل</span>
+      </div>
+      <div id="attendanceHistoryList" class="space-y-2 max-h-48 overflow-y-auto text-xs">
+        <p class="text-slate-500 text-center py-4">جاري تحميل السجل...</p>
+      </div>
+    </div>
+
+    <!-- PAYMENTS RECEIPT HISTORY -->
+    <div class="glass-card p-5 rounded-3xl border border-white/10 space-y-3 text-right">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
+        <h3 class="font-black text-sm text-white flex items-center gap-2">
+          <i class="fa-solid fa-receipt text-emerald-400"></i> كشف سندات القبض والإيصالات
+        </h3>
+        <span class="text-[10px] text-slate-400" id="payLogsCountBadge">0 إيصال</span>
+      </div>
+      <div id="paymentsHistoryList" class="space-y-2 max-h-48 overflow-y-auto text-xs">
+        <p class="text-slate-500 text-center py-4">جاري تحميل الإيصالات...</p>
+      </div>
+    </div>
 
   </div>
 
-  <!-- CORE LOGIC SCRIPT -->
+  <!-- نافذة معاينة وتشغيل الفيديو للطالب (مشغل آمن 100% بنسبة 16:9 وبدون شاشة سوداء + درع حماية الشعار) -->
+  <div id="studentVideoModal" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 rounded-3xl p-4 md:p-5 w-full max-w-3xl border border-slate-800 space-y-3 shadow-2xl">
+      <div class="flex justify-between items-center text-white px-2">
+        <div class="flex items-center gap-2">
+          <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+          <h4 class="font-bold text-sm md:text-base text-slate-200" id="studentVideoTitle">مشاهدة الحصة</h4>
+        </div>
+        <button onclick="closeStudentVideoModal()" class="text-slate-400 hover:text-rose-400 font-bold text-2xl leading-none transition">&times;</button>
+      </div>
+      
+      <!-- مسرح الفيديو النظيف بنسبة 16:9 مع طبقة الحماية المطابقة لواجهة المعلم -->
+      <div class="pure-video-stage" id="pureVideoStageBox">
+        <div class="pure-event-interceptor"></div>
+        <div id="studentVideoMount"></div>
+      </div>
+      
+      <div class="text-[11px] text-slate-400 text-center font-medium">
+        منصة رَقِـيـبْ التعليمية الذكية - مشاهدة آمنة محمية
+      </div>
+    </div>
+  </div>
+
   <script>
     const CORE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWTh9SkfaCo9I1kkhMcSnAyamL9R7CyuT7BGixFpW92SAsVGcsBHDEAFWGmFwLopiV/exec";
     const ATTENDANCE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkJx36aqzGdSr-oh3_uYowEOMwGpcVKN8RKJzr6PpW02RAhIA8k-0w6juyyZyDx5TOzw/exec";
 
-    let currentStudent = null;
-    let allLessons = [];
-    let allExams = [];
-    let attendanceLogs = [];
-    let allClasses = [];
-    let deferredPrompt = null;
+    let currentStudent = JSON.parse(localStorage.getItem("raqib_student_session") || "null");
+    let studentLessonsCache = [];
 
-    // Service Worker Registration for PWA
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Registration error:', err));
-    }
-
-    // Capture PWA Install Prompt
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-    });
-
-    function isAppRunningStandalone() {
-      return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    }
-
-    // Auto-login & URL Check on Launch
-    window.onload = async () => {
-      const savedStudentQuery = localStorage.getItem("raqib_student_session_query");
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlId = urlParams.get('id');
-
-      const targetQuery = urlId || savedStudentQuery;
-
-      if (targetQuery) {
-        document.getElementById("loginStudentQuery").value = targetQuery;
-        await performLogin(targetQuery, false);
-      }
-    };
-
-    function showLoader(txt = "جاري التحميل...") {
+    function showLoader(txt = "جاري المعالجة...") {
       document.getElementById("loaderText").innerText = txt;
       document.getElementById("loader").classList.remove("hidden");
     }
-    function hideLoader() { document.getElementById("loader").classList.add("hidden"); }
+    function hideLoader() { 
+      document.getElementById("loader").classList.add("hidden"); 
+    }
+
+    async function sendApiRequest(url, payload) {
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          redirect: "follow",
+          body: JSON.stringify(payload)
+        });
+        const text = await res.text();
+        
+        if (text.trim().startsWith("<!DOCTYPE") || text.trim().startsWith("<html")) {
+          console.error("خطأ من السيرفر: الخادم أرجع صفحة HTML بدلاً من JSON.");
+          return { status: "error", message: "خطأ في الاتصال بالخادم أو رابط السكربت غير صحيح." };
+        }
+
+        return JSON.parse(text);
+      } catch (err) {
+        console.error("API Fetch Error:", err);
+        return { status: "error", message: err.toString() };
+      }
+    }
+
+    window.onload = () => {
+      if (currentStudent && currentStudent.id && currentStudent.sheetId) {
+        document.getElementById("loginScreen").classList.add("hidden");
+        verifyStudentAccessOnStart();
+      }
+    };
 
     async function handleStudentLogin(e) {
       e.preventDefault();
-      const q = document.getElementById("loginStudentQuery").value.trim();
-      if (!q) return;
-      await performLogin(q, true);
-    }
+      const tCode = document.getElementById("loginTeacherCode").value.trim();
+      const sId = document.getElementById("loginStudentId").value.trim();
 
-    async function performLogin(searchQuery, isManualSubmit = false) {
-      showLoader("جاري مزامنة حساب الطالب...");
+      if (!tCode || !sId) {
+        alert("⚠️ يرجى إدخال كود المعلم وكود الطالب!");
+        return;
+      }
+
+      showLoader("جاري التحقق والبحث في دفتر الأستاذ...");
 
       try {
-        const resCore = await fetch(CORE_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "getCoreData" })
+        const res = await sendApiRequest(CORE_SCRIPT_URL, {
+          action: "studentLoginByTeacherCode",
+          teacherCode: tCode,
+          studentId: sId
         });
-        const dataCore = await resCore.json();
 
-        if (dataCore && dataCore.status === "success") {
-          const students = dataCore.students || [];
-          allLessons = dataCore.lessons || [];
-          allExams = dataCore.exams || [];
-          allClasses = dataCore.classes || [];
-
-          // فحص الطالب بالكود أو برقم الهاتف
-          const match = students.find(s => 
-            s.id.toString() === searchQuery.toString() || 
-            (s.phone && s.phone === searchQuery) || 
-            (s.parentPhone && s.parentPhone === searchQuery)
-          );
-
-          if (!match) {
-            if (isManualSubmit) {
-              alert("❌ لم يتم العثور على طالب مطابق للكود أو رقم الهاتف! يرجى مراجعة أستاذك.");
-            } else {
-              localStorage.removeItem("raqib_student_session_query");
-            }
-            hideLoader();
-            return;
-          }
-
-          currentStudent = match;
-          
-          // حفظ الجلسة بالمتصفح دائماً
-          localStorage.setItem("raqib_student_session_query", currentStudent.id);
-
-          // جلب سجل الحضور
-          try {
-            const resAtt = await fetch(ATTENDANCE_SCRIPT_URL, {
-              method: "POST",
-              headers: { "Content-Type": "text/plain;charset=utf-8" },
-              body: JSON.stringify({ action: "getAttendanceLogs" })
-            });
-            const dataAtt = await resAtt.json();
-            if (dataAtt && dataAtt.status === "success") {
-              attendanceLogs = dataAtt.logs || [];
-            }
-          } catch(e) {
-            console.warn("Attendance fetch error:", e);
-          }
-
+        if (res && res.status === "success" && res.student) {
+          currentStudent = res.student;
+          localStorage.setItem("raqib_student_session", JSON.stringify(currentStudent));
           document.getElementById("loginScreen").classList.add("hidden");
-
-          // التحقق من تفعيل رسم الـ 10 جنيهات
-          const isPaid = localStorage.getItem(`raqib_student_paid_${currentStudent.id}`) === "true";
-          if (!isPaid) {
-            document.getElementById("paySubscriptionModal").classList.remove("hidden");
-          } else {
-            renderStudentDashboard();
-            checkAndPromptPWAInstall();
-          }
+          verifyStudentAccessOnStart();
+        } else {
+          alert(res.message || "❌ لم يتم العثور على الطالب، تأكد من كود المعلم ورقم كودك!");
         }
       } catch (err) {
-        if (isManualSubmit) alert("حدث خطأ أثناء الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت.");
+        alert("حدث خطأ أثناء الاتصال بالخادم، يرجى التحقق من الإنترنت وإعادة المحاولة.");
       } finally {
         hideLoader();
       }
     }
 
-    function confirmPaymentWhatsApp() {
-      const msg = `مرحباً إدارة رَقِـيـبْ،\nأنا الطالب: ${currentStudent.name}\nالكود: [${currentStudent.id}]\nقمت بسداد رسوم تفعيل البطاقة الذكية (10 ج) وأرغب في اعتماد التفعيل.`;
-      localStorage.setItem(`raqib_student_paid_${currentStudent.id}`, "true");
-      window.open(`https://wa.me/201000000000?text=${encodeURIComponent(msg)}`, '_blank');
-      document.getElementById("paySubscriptionModal").classList.add("hidden");
-      renderStudentDashboard();
-      checkAndPromptPWAInstall();
+    async function verifyStudentAccessOnStart() {
+      showLoader("جاري التحقق من صلاحيات الدخول...");
+      try {
+        const result = await sendApiRequest(CORE_SCRIPT_URL, {
+          action: "checkStudentAccessStatus",
+          studentId: currentStudent.id,
+          sheetId: currentStudent.sheetId || ""
+        });
+
+        if (result && result.status === "active") {
+          document.getElementById("studentAccessModal").classList.add("hidden");
+          document.getElementById("studentApp").classList.remove("hidden");
+          renderStudentDashboard();
+          loadStudentAcademicLogs();
+          loadStudentLessonsData();
+        } else if (result && result.status === "pending") {
+          showPendingApprovalScreen();
+        } else {
+          showRequestAccessScreen();
+        }
+      } catch (err) {
+        showRequestAccessScreen();
+      } finally {
+        hideLoader();
+      }
+    }
+
+    function showRequestAccessScreen() {
+      document.getElementById("modalStudentCode").innerText = currentStudent.id;
+      document.getElementById("modalStudentName").innerText = currentStudent.name;
+      document.getElementById("stateRequestAccess").classList.remove("hidden");
+      document.getElementById("statePendingApproval").classList.add("hidden");
+      document.getElementById("studentAccessModal").classList.remove("hidden");
+    }
+
+    function showPendingApprovalScreen() {
+      document.getElementById("stateRequestAccess").classList.add("hidden");
+      document.getElementById("statePendingApproval").classList.remove("hidden");
+      document.getElementById("studentAccessModal").classList.remove("hidden");
+    }
+
+    async function sendAccessRequest() {
+      const btn = document.getElementById("btnSendAccessReq");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> جاري إرسال الطلب...';
+
+      try {
+        const result = await sendApiRequest(CORE_SCRIPT_URL, {
+          action: "requestStudentAccess",
+          req: {
+            studentId: currentStudent.id,
+            studentName: currentStudent.name,
+            teacherId: currentStudent.sheetId || "",
+            phone: currentStudent.phone || currentStudent.parentPhone || ""
+          }
+        });
+
+        if (result && (result.status === "success" || result.status === "pending")) {
+          showPendingApprovalScreen();
+        } else {
+          alert("تعذر إرسال الطلب حالياً.");
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> <span>إرسال طلب تفعيل وتأكيد الحساب</span>';
+        }
+      } catch (err) {
+        alert("خطأ في الاتصال بالإنترنت.");
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> <span>إعادة المحاولة</span>';
+      }
+    }
+
+    async function checkAccessAgain() {
+      await verifyStudentAccessOnStart();
     }
 
     function renderStudentDashboard() {
-      document.getElementById("studentApp").classList.remove("hidden");
-
       document.getElementById("headerStudentName").innerText = currentStudent.name;
-      document.getElementById("headerStudentGrade").innerText = currentStudent.grade || "طالب";
+      document.getElementById("cardStudentName").innerText = currentStudent.name;
+      document.getElementById("cardStudentId").innerText = currentStudent.id;
+      document.getElementById("cardGroupName").innerText = currentStudent.groupCode || "المجموعة العامة";
+      document.getElementById("cardGrade").innerText = currentStudent.grade || "-";
 
-      document.getElementById("cardName").innerText = currentStudent.name;
-      document.getElementById("cardId").innerText = `الكود الرقمي: [${currentStudent.id}]`;
-      
-      const grp = allClasses.find(c => c.groupCode === currentStudent.groupCode);
-      document.getElementById("cardGroup").innerText = `المجموعة: ${grp ? grp.groupName : 'بدون مجموعة'}`;
-
-      // توليد الـ QR Code للبطاقة
-      const qrEl = document.getElementById("cardQrCode");
-      qrEl.innerHTML = "";
-      new QRCode(qrEl, {
-        text: currentStudent.id.toString(),
-        width: 110,
-        height: 110,
-        colorDark: "#1e1b4b",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.M
-      });
-
-      renderStudentLessons();
-      renderStudentExams();
-      renderStudentAttendance();
-    }
-
-    function renderStudentLessons() {
-      const container = document.getElementById("studentLessonsList");
-      const matched = allLessons.filter(l => l.grade === currentStudent.grade || l.groupCode === currentStudent.groupCode || l.groupCode === "ALL");
-
-      if (matched.length === 0) {
-        container.innerHTML = '<p class="text-slate-500 text-xs text-center py-6">لا توجد حصص مسجلة لصفك الدراسي حالياً.</p>';
-        return;
+      const qrContainer = document.getElementById("studentQRCodeContainer");
+      if (qrContainer) {
+        qrContainer.innerHTML = "";
+        new QRCode(qrContainer, {
+          text: currentStudent.id.toString(),
+          width: 95,
+          height: 95,
+          colorDark: "#1e1b4b",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.M
+        });
       }
-
-      container.innerHTML = matched.map(l => `
-        <div class="glass-card p-4 rounded-2xl flex justify-between items-center text-xs">
-          <div>
-            <div class="font-bold text-white text-sm">${l.title}</div>
-            <div class="text-[10px] text-slate-400 mt-0.5">📅 ${l.date}</div>
-          </div>
-          <a href="${l.videoUrl}" target="_blank" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition btn-press">
-            <i class="fa-solid fa-play"></i> تشغيل
-          </a>
-        </div>
-      `).join('');
     }
 
-    function renderStudentExams() {
-      const container = document.getElementById("studentExamsList");
-      const myExams = allExams.filter(e => e.scores && e.scores[currentStudent.id] !== undefined);
+    async function loadStudentAcademicLogs() {
+      try {
+        const [attData, coreData] = await Promise.all([
+          sendApiRequest(ATTENDANCE_SCRIPT_URL, { 
+            action: "getAttendanceLogs", 
+            sheetId: currentStudent.sheetId 
+          }),
+          sendApiRequest(CORE_SCRIPT_URL, { 
+            action: "getCoreData", 
+            sheetId: currentStudent.sheetId 
+          })
+        ]);
 
-      if (myExams.length === 0) {
-        container.innerHTML = '<p class="text-slate-500 text-xs text-center py-6">لم يتم رصد درجات امتحانات لك حتى الآن.</p>';
-        return;
-      }
-
-      container.innerHTML = myExams.map(e => `
-        <div class="glass-card p-4 rounded-2xl flex justify-between items-center text-xs">
-          <div>
-            <div class="font-bold text-white text-sm">${e.title}</div>
-            <div class="text-[10px] text-slate-400 mt-0.5">📅 ${e.date} | الدرجة النهائية: ${e.maxScore}</div>
-          </div>
-          <span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 font-black text-sm px-3 py-1 rounded-xl">
-            ${e.scores[currentStudent.id]} / ${e.maxScore}
-          </span>
-        </div>
-      `).join('');
-    }
-
-    function renderStudentAttendance() {
-      const container = document.getElementById("studentAttendanceList");
-      const myAtt = attendanceLogs.filter(a => a.studentId === currentStudent.id.toString());
-
-      if (myAtt.length === 0) {
-        container.innerHTML = '<p class="text-slate-500 text-xs text-center py-6">لا يوجد سجل حضور مسجل حتى الآن.</p>';
-        return;
-      }
-
-      const presentCount = myAtt.filter(a => a.status === "Present").length;
-      const rate = Math.round((presentCount / myAtt.length) * 100);
-      document.getElementById("studentAttendanceRate").innerText = `نسبة الحضور: ${rate}% (${presentCount} من ${myAtt.length})`;
-
-      container.innerHTML = myAtt.map(a => `
-        <div class="glass-card p-3 rounded-2xl flex justify-between items-center text-xs">
-          <div>
-            <div class="font-bold text-white">${a.groupName}</div>
-            <div class="text-[10px] text-slate-400">📅 ${a.date} | ⏰ ${a.time}</div>
-          </div>
-          <span class="font-bold px-2.5 py-1 rounded-lg ${a.status === 'Present' ? 'text-emerald-400 bg-emerald-500/10' : 'text-rose-400 bg-rose-500/10'}">
-            ${a.status === 'Present' ? 'حاضر ✅' : 'غائب ❌'}
-          </span>
-        </div>
-      `).join('');
-    }
-
-    function switchStudentTab(tabId) {
-      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
-      document.getElementById(`tab-${tabId}`)?.classList.add("active");
-
-      document.querySelectorAll(".student-nav-btn").forEach(btn => {
-        if (btn.dataset.tab === tabId) {
-          btn.className = "student-nav-btn flex-1 py-2.5 rounded-xl text-white bg-indigo-600/90 shadow transition";
-        } else {
-          btn.className = "student-nav-btn flex-1 py-2.5 rounded-xl hover:text-white transition";
+        if (attData && attData.status === "success") {
+          const logs = (attData.logs || []).filter(l => l.studentId.toString() === currentStudent.id.toString());
+          renderAttendanceLogs(logs);
         }
-      });
+
+        if (coreData && coreData.status === "success") {
+          const pays = (coreData.payments || []).filter(p => p.studentId.toString() === currentStudent.id.toString());
+          renderPaymentsLogs(pays);
+        }
+      } catch (err) {
+        console.warn("تعذر تحميل السجلات الحية:", err);
+      }
     }
 
-    function checkAndPromptPWAInstall() {
-      if (isAppRunningStandalone()) return;
+    async function loadStudentLessonsData() {
+      try {
+        const res = await sendApiRequest(CORE_SCRIPT_URL, {
+          action: "getCoreData",
+          sheetId: currentStudent.sheetId || ""
+        });
 
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-      const modal = document.getElementById("pwaInstallModal");
+        if (res && res.status === "success") {
+          studentLessonsCache = res.lessons || [];
+          renderStudentLessons(studentLessonsCache);
+        }
+      } catch (err) {
+        console.warn("تعذر تحميل حصص الطالب:", err);
+      }
+    }
+
+    function renderStudentLessons(lessons) {
+      const container = document.getElementById("studentLessonsList");
+      const badge = document.getElementById("studentLessonsCountBadge");
+      if (!container) return;
+
+      const availableLessons = lessons.filter(l => {
+        const gradeMatch = !l.grade || l.grade === currentStudent.grade || l.grade === "";
+        const groupMatch = l.groupCode === "ALL" || l.groupCode === currentStudent.groupCode || !l.groupCode;
+        return gradeMatch && groupMatch;
+      });
+
+      if (badge) badge.innerText = `${availableLessons.length} حصص`;
+
+      if (availableLessons.length === 0) {
+        container.innerHTML = '<p class="text-slate-500 text-center py-4">لا توجد حصص مسجلة متاحة لك حالياً.</p>';
+        return;
+      }
+
+      container.innerHTML = availableLessons.map(l => {
+        const isPaid = l.isPaid === true || l.isPaid === "true";
+        const unlockedList = l.unlockedStudents || [];
+        const isUnlocked = !isPaid || unlockedList.includes(currentStudent.id.toString());
+
+        return `
+          <div class="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div>
+              <div class="font-bold text-white text-sm">${l.title}</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">📅 ${l.date || ''} | ${isPaid ? (isUnlocked ? '<span class="text-emerald-400 font-bold">مفعلة مدفوعة ✓</span>' : '<span class="text-amber-400 font-bold">مقفولة (تطلب التفعيل) 🔒</span>') : '<span class="text-blue-400 font-bold">حصة مجانية</span>'}</div>
+            </div>
+            
+            <div>
+              ${isUnlocked ? `
+                <button onclick="playStudentVideo('${l.lessonId}')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs shadow transition btn-press flex items-center gap-1.5">
+                  <i class="fa-solid fa-play"></i> مشاهدة الشرح
+                </button>
+              ` : `
+                <span class="text-[11px] text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-1.5 rounded-xl font-bold">
+                  برجاء التواصل مع الأستاذ للتفعيل
+                </span>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function extractYouTubeID(url) {
+      if (!url) return null;
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    // --- معمارية التشغيل الآمنة والنظيفة 100% بدون شاشة سوداء وبنفس أحكام واجهة المعلم ---
+    function playStudentVideo(lessonId) {
+      const lesson = studentLessonsCache.find(l => l.lessonId === lessonId);
+      if (!lesson) return;
+
+      const ytId = extractYouTubeID(lesson.videoUrl);
+      if (!ytId) {
+        alert("⚠️ رابط الفيديو غير صالح!");
+        return;
+      }
+
+      document.getElementById("studentVideoTitle").innerText = lesson.title;
+      const modal = document.getElementById("studentVideoModal");
       modal.classList.remove("hidden");
 
-      if (isIOS) {
-        document.getElementById("androidInstallBox").classList.add("hidden");
-        document.getElementById("iosInstallGuide").classList.remove("hidden");
+      const mount = document.getElementById("studentVideoMount");
+      mount.innerHTML = "";
+
+      // مهلة زمنية دقيقة لضبط إطار العرض ومنع أي شاشة سوداء نهائياً
+      setTimeout(() => {
+        mount.innerHTML = `
+          <div style="position: relative; width: 100%; height: 100%; background: #000; border-radius: 1rem; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 75%; z-index: 40; background: transparent;"></div>
+            <iframe
+              src="https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&controls=1"
+              style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+            ></iframe>
+          </div>
+        `;
+      }, 50);
+    }
+
+    function closeStudentVideoModal() {
+      const mount = document.getElementById("studentVideoMount");
+      if (mount) mount.innerHTML = ""; // إيقاف الفيديو والصوت وفصله تماماً فور الإغلاق
+      document.getElementById("studentVideoModal")?.classList.add("hidden");
+    }
+
+    function renderAttendanceLogs(logs) {
+      const container = document.getElementById("attendanceHistoryList");
+      const badge = document.getElementById("attLogsCountBadge");
+      if (badge) badge.innerText = `${logs.length} حصص`;
+
+      if (!container) return;
+
+      if (logs.length === 0) {
+        container.innerHTML = '<p class="text-slate-500 text-center py-4">لا توجد حصص مسجلة حتى الآن.</p>';
+        return;
       }
+
+      const presentCount = logs.filter(l => l.status === "Present").length;
+      const rate = Math.round((presentCount / logs.length) * 100);
+      document.getElementById("metricAttRate").innerText = `${rate}%`;
+      document.getElementById("metricAttCount").innerText = `${presentCount} من أصل ${logs.length} حصص`;
+
+      container.innerHTML = [...logs].reverse().map(l => {
+        const isPresent = l.status === "Present";
+        return `
+          <div class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 flex justify-between items-center">
+            <div>
+              <div class="font-bold text-white">${l.groupName || 'حصة دراسية'}</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">📅 ${l.date} | ⏰ ${l.time || ''}</div>
+            </div>
+            <span class="px-2.5 py-1 rounded-xl text-xs font-bold ${isPresent ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">
+              ${isPresent ? 'حاضر ✓' : 'غائب ✕'}
+            </span>
+          </div>
+        `;
+      }).join('');
     }
 
-    async function triggerPwaInstall() {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        deferredPrompt = null;
-        if (outcome === 'accepted') dismissPwaModal();
-      } else {
-        alert("لتثبيت التطبيق: اضغط على خيارات المتصفح (⋮) ثم اختر 'إضافة إلى الشاشة الرئيسية' أو 'Install App'.");
-        dismissPwaModal();
+    function renderPaymentsLogs(pays) {
+      const container = document.getElementById("paymentsHistoryList");
+      const badge = document.getElementById("payLogsCountBadge");
+      if (badge) badge.innerText = `${pays.length} إيصالات`;
+
+      if (!container) return;
+
+      if (pays.length === 0) {
+        container.innerHTML = '<p class="text-slate-500 text-center py-4">لا توجد إيصالات سداد مسجلة.</p>';
+        return;
       }
+
+      const totalPaid = pays.reduce((sum, p) => sum + Number(p.amountPaid || 0), 0);
+      document.getElementById("metricTotalPaid").innerText = `${totalPaid} ج.م`;
+
+      const lastPay = pays[pays.length - 1];
+      if (lastPay) {
+        document.getElementById("metricLastPayment").innerText = `آخر سداد: ${lastPay.amountPaid} ج.م (${lastPay.date})`;
+      }
+
+      container.innerHTML = [...pays].reverse().map(p => `
+        <div class="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 flex justify-between items-center">
+          <div>
+            <div class="font-bold text-white">${p.paymentType || 'سداد نقدية'} <span class="text-[10px] text-slate-400 font-mono">[${p.receiptId}]</span></div>
+            <div class="text-[10px] text-slate-400 mt-0.5">📅 ${p.date} | ${p.notes ? 'ملاحظة: ' + p.notes : ''}</div>
+          </div>
+          <div class="text-left">
+            <div class="font-black text-emerald-400 text-sm">${p.amountPaid} ج.م</div>
+            ${p.remaining > 0 ? `<div class="text-[10px] text-rose-400">متبقي: ${p.remaining} ج.م</div>` : ''}
+          </div>
+        </div>
+      `).join('');
     }
 
-    function dismissPwaModal() {
-      document.getElementById("pwaInstallModal").classList.add("hidden");
-    }
-
-    // تسجيل الخروج التام ومسح الجلسة المحفوظة
     function logoutStudent() {
-      if (confirm("هل تريد تسجيل الخروج؟ ستحتاج لإدخال الكود مرة أخرى عند الدخول.")) {
-        localStorage.removeItem("raqib_student_session_query");
-        currentStudent = null;
-        document.getElementById("studentApp").classList.add("hidden");
-        document.getElementById("paySubscriptionModal").classList.add("hidden");
-        document.getElementById("loginScreen").classList.remove("hidden");
-        document.getElementById("loginStudentQuery").value = "";
-      }
+      localStorage.removeItem("raqib_student_session");
+      location.reload();
     }
   </script>
 </body>

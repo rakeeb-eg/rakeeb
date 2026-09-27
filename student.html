@@ -48,7 +48,7 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ========================================================= */
-    /* معمارية مشغل Plyr الاحترافي 16:9 والمحمي تماماً */
+    /* معمارية مشغل Plyr الاحترافي 16:9 مع الدرع الأسود الحصين */
     /* ========================================================= */
     :root {
       --plyr-color-main: #4f46e5;
@@ -79,16 +79,16 @@
       border: 0 !important;
     }
 
-    /* درع الحماية الشفاف لمنع الانتقال أو النقر على أزرار يوتيوب الخارجية */
+    /* المستطيل الأسود العلوي لمنع الانتقال أو النقر نهائياً */
     .pure-event-interceptor {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
-      height: 60px;
-      z-index: 50;
+      height: 65px;
+      z-index: 60;
       cursor: default;
-      background: transparent;
+      background: #000000;
     }
 
     ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -293,7 +293,7 @@
 
   </div>
 
-  <!-- نافذة معاينة وتشغيل الفيديو للطالب (مشغل Plyr محمي تماماً ومنع خروج الطالب) -->
+  <!-- نافذة معاينة وتشغيل الفيديو للطالب (مشغل Plyr مع المستطيل الأسود الحصين لحماية 100%) -->
   <div id="studentVideoModal" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
     <div class="bg-slate-900 rounded-3xl p-4 md:p-5 w-full max-w-3xl border border-slate-800 space-y-3 shadow-2xl">
       <div class="flex justify-between items-center text-white px-2">
@@ -304,7 +304,7 @@
         <button onclick="closeStudentVideoModal()" class="text-slate-400 hover:text-rose-400 font-bold text-2xl leading-none transition">&times;</button>
       </div>
       
-      <!-- مسرح الفيديو بنسبة 16:9 مع درع الحماية العلوية لمنع الانتقال ليوتيوب -->
+      <!-- مسرح الفيديو بنسبة 16:9 مع المستطيل الأسود الحصين في الأعلى -->
       <div class="pure-video-stage" id="pureVideoStageBox">
         <div class="pure-event-interceptor" title="منصة رقيب التعليمية"></div>
         <div id="studentVideoMount"></div>
@@ -587,7 +587,7 @@
       return (match && match[2].length === 11) ? match[2] : null;
     }
 
-    // --- معمارية مشغل Plyr الآمنة عبر ديف يوتيوب رسمي لمنع الخروج والشاشة السوداء ---
+    // --- تشغيل الحصة عبر Plyr مع الدرع الأسود الحصين ---
     function playStudentVideo(lessonId) {
       const lesson = studentLessonsCache.find(l => l.lessonId === lessonId);
       if (!lesson) return;

@@ -14,6 +14,10 @@
   <!-- مكتبة توليد الـ QR Code -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
+  <!-- مكتبة ومشغل Plyr -->
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+  <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+
   <style>
     * { font-family: 'Cairo', system-ui, -apple-system, sans-serif; }
     body { background-color: #0b0f19; color: #f8fafc; }
@@ -44,8 +48,13 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ========================================================= */
-    /* معمارية المشغل الآمن والثابت 16:9 بنسبة 100% بدون شاشة سوداء */
+    /* معمارية مشغل Plyr الاحترافي 16:9 والمحمي تماماً */
     /* ========================================================= */
+    :root {
+      --plyr-color-main: #4f46e5;
+      --plyr-video-background: #000000;
+    }
+
     .pure-video-stage {
       position: relative;
       width: 100%;
@@ -56,23 +65,27 @@
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
     }
 
-    .pure-video-stage iframe, 
-    .pure-video-stage div#youtube-player-element {
+    .pure-video-stage .plyr {
       position: absolute;
       top: 0;
       left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .pure-video-stage iframe {
       width: 100% !important;
       height: 100% !important;
       border: 0 !important;
     }
 
-    /* طبقة الحماية العازلة لمنع النقر على أزرار يوتيوب أو الخروج للمنصة */
+    /* درع الحماية الشفاف لمنع الانتقال أو النقر على أزرار يوتيوب الخارجية */
     .pure-event-interceptor {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
-      height: 50px;
+      height: 60px;
       z-index: 50;
       cursor: default;
       background: transparent;
@@ -280,7 +293,7 @@
 
   </div>
 
-  <!-- نافذة معاينة وتشغيل الفيديو للطالب (مشغل رسمي آمن 100% بنسبة 16:9 وبدون شاشة سوداء + درع حماية) -->
+  <!-- نافذة معاينة وتشغيل الفيديو للطالب (مشغل Plyr محمي تماماً ومنع خروج الطالب) -->
   <div id="studentVideoModal" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
     <div class="bg-slate-900 rounded-3xl p-4 md:p-5 w-full max-w-3xl border border-slate-800 space-y-3 shadow-2xl">
       <div class="flex justify-between items-center text-white px-2">
@@ -291,7 +304,7 @@
         <button onclick="closeStudentVideoModal()" class="text-slate-400 hover:text-rose-400 font-bold text-2xl leading-none transition">&times;</button>
       </div>
       
-      <!-- مسرح الفيديو النظيف بنسبة 16:9 مع درع الحماية العلوية لمنع الخروج -->
+      <!-- مسرح الفيديو بنسبة 16:9 مع درع الحماية العلوية لمنع الانتقال ليوتيوب -->
       <div class="pure-video-stage" id="pureVideoStageBox">
         <div class="pure-event-interceptor" title="منصة رقيب التعليمية"></div>
         <div id="studentVideoMount"></div>
@@ -309,7 +322,7 @@
 
     let currentStudent = JSON.parse(localStorage.getItem("raqib_student_session") || "null");
     let studentLessonsCache = [];
-    let activeYouTubePlayer = null;
+    let activePlyrInstance = null;
 
     function showLoader(txt = "جاري المعالجة...") {
       document.getElementById("loaderText").innerText = txt;
@@ -574,7 +587,7 @@
       return (match && match[2].length === 11) ? match[2] : null;
     }
 
-    // --- معمارية التشغيل الجذرية الآمنة عبر YouTube IFrame API لمنع الشاشة السوداء وضمان العمل 100% ---
+    // --- معمارية مشغل Plyr الآمنة عبر ديف يوتيوب رسمي لمنع الخروج والشاشة السوداء ---
     function playStudentVideo(lessonId) {
       const lesson = studentLessonsCache.find(l => l.lessonId === lessonId);
       if (!lesson) return;
@@ -590,53 +603,29 @@
       modal.classList.remove("hidden");
 
       const mount = document.getElementById("studentVideoMount");
-      mount.innerHTML = '<div id="youtube-player-element" style="width:100%; height:100%;"></div>';
+      mount.innerHTML = `<div class="plyr__video-embed" id="player"><iframe src="https://www.youtube-nocookie.com/embed/${ytId}?origin=${encodeURIComponent(window.location.origin)}&iv_load_policy=3&modestbranding=1&playsinline=1&showinfo=0&rel=0&enablejsapi=1" allowfullscreen allowtransparency allow="autoplay"></iframe></div>`;
 
-      if (!window.YT) {
-        const tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        const firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-        
-        window.onYouTubeIframeAPIReady = function() {
-          initPlayer(ytId);
-        };
-      } else {
-        initPlayer(ytId);
-      }
-    }
-
-    function initPlayer(ytId) {
-      if (activeYouTubePlayer && typeof activeYouTubePlayer.destroy === 'function') {
-        activeYouTubePlayer.destroy();
+      if (activePlyrInstance) {
+        try { activePlyrInstance.destroy(); } catch(e) {}
       }
 
-      activeYouTubePlayer = new YT.Player('youtube-player-element', {
-        height: '100%',
-        width: '100%',
-        videoId: ytId,
-        playerVars: {
-          'autoplay': 1,
-          'controls': 1,
-          'rel': 0,
-          'modestbranding': 1,
-          'iv_load_policy': 3,
-          'fs': 1,
-          'playsinline': 1
-        },
-        events: {
-          'onReady': (event) => {
-            event.target.playVideo();
-          }
-        }
-      });
+      setTimeout(() => {
+        activePlyrInstance = new Plyr('#player', {
+          controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],
+          ratio: '16:9',
+          fullscreen: { enabled: true, fallback: true, iosNative: true },
+          storage: { enabled: false }
+        });
+      }, 100);
     }
 
     function closeStudentVideoModal() {
-      if (activeYouTubePlayer && typeof activeYouTubePlayer.stopVideo === 'function') {
-        activeYouTubePlayer.stopVideo();
-        activeYouTubePlayer.destroy();
-        activeYouTubePlayer = null;
+      if (activePlyrInstance) {
+        try {
+          activePlyrInstance.stop();
+          activePlyrInstance.destroy();
+        } catch(e) {}
+        activePlyrInstance = null;
       }
       const mount = document.getElementById("studentVideoMount");
       if (mount) mount.innerHTML = "";

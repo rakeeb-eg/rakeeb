@@ -14,10 +14,6 @@
   <!-- مكتبة توليد الـ QR Code -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-  <!-- مكتبة ومشغل Plyr -->
-  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-  <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
-
   <style>
     * { font-family: 'Cairo', system-ui, -apple-system, sans-serif; }
     body { background-color: #0b0f19; color: #f8fafc; }
@@ -48,13 +44,8 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ========================================================= */
-    /* معمارية المشغل الصافي والثابت 16:9 المطابقة لواجهة الأستاذ */
+    /* معمارية المشغل الآمن والثابت 16:9 بنسبة 100% بدون شاشة سوداء */
     /* ========================================================= */
-    :root {
-      --plyr-color-main: #4f46e5;
-      --plyr-video-background: #000000;
-    }
-
     .pure-video-stage {
       position: relative;
       width: 100%;
@@ -65,27 +56,25 @@
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
     }
 
-    .pure-video-stage .plyr {
+    .pure-video-stage iframe, 
+    .pure-video-stage div#youtube-player-element {
       position: absolute;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
-    }
-
-    .pure-video-stage iframe {
       width: 100% !important;
       height: 100% !important;
       border: 0 !important;
     }
 
-    /* طبقة الحماية العازلة لمنع التلاعب أو النقر على شعار يوتيوب */
+    /* طبقة الحماية العازلة لمنع النقر على أزرار يوتيوب أو الخروج للمنصة */
     .pure-event-interceptor {
       position: absolute;
-      inset: 0;
-      bottom: 50px;
-      z-index: 5;
-      cursor: pointer;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 50px;
+      z-index: 50;
+      cursor: default;
       background: transparent;
     }
 
@@ -291,7 +280,7 @@
 
   </div>
 
-  <!-- نافذة معاينة وتشغيل الفيديو للطالب (مشغل آمن 100% بنسبة 16:9 وبدون شاشة سوداء + درع حماية الشعار) -->
+  <!-- نافذة معاينة وتشغيل الفيديو للطالب (مشغل رسمي آمن 100% بنسبة 16:9 وبدون شاشة سوداء + درع حماية) -->
   <div id="studentVideoModal" class="hidden fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
     <div class="bg-slate-900 rounded-3xl p-4 md:p-5 w-full max-w-3xl border border-slate-800 space-y-3 shadow-2xl">
       <div class="flex justify-between items-center text-white px-2">
@@ -302,9 +291,9 @@
         <button onclick="closeStudentVideoModal()" class="text-slate-400 hover:text-rose-400 font-bold text-2xl leading-none transition">&times;</button>
       </div>
       
-      <!-- مسرح الفيديو النظيف بنسبة 16:9 مع طبقة الحماية المطابقة لواجهة المعلم -->
+      <!-- مسرح الفيديو النظيف بنسبة 16:9 مع درع الحماية العلوية لمنع الخروج -->
       <div class="pure-video-stage" id="pureVideoStageBox">
-        <div class="pure-event-interceptor"></div>
+        <div class="pure-event-interceptor" title="منصة رقيب التعليمية"></div>
         <div id="studentVideoMount"></div>
       </div>
       
@@ -320,6 +309,7 @@
 
     let currentStudent = JSON.parse(localStorage.getItem("raqib_student_session") || "null");
     let studentLessonsCache = [];
+    let activeYouTubePlayer = null;
 
     function showLoader(txt = "جاري المعالجة...") {
       document.getElementById("loaderText").innerText = txt;
@@ -584,7 +574,7 @@
       return (match && match[2].length === 11) ? match[2] : null;
     }
 
-    // --- معمارية التشغيل الآمنة والنظيفة 100% بدون شاشة سوداء وبنفس أحكام واجهة المعلم ---
+    // --- معمارية التشغيل الجذرية الآمنة عبر YouTube IFrame API لمنع الشاشة السوداء وضمان العمل 100% ---
     function playStudentVideo(lessonId) {
       const lesson = studentLessonsCache.find(l => l.lessonId === lessonId);
       if (!lesson) return;
@@ -600,27 +590,57 @@
       modal.classList.remove("hidden");
 
       const mount = document.getElementById("studentVideoMount");
-      mount.innerHTML = "";
+      mount.innerHTML = '<div id="youtube-player-element" style="width:100%; height:100%;"></div>';
 
-      // مهلة زمنية دقيقة لضبط إطار العرض ومنع أي شاشة سوداء نهائياً
-      setTimeout(() => {
-        mount.innerHTML = `
-          <div style="position: relative; width: 100%; height: 100%; background: #000; border-radius: 1rem; overflow: hidden;">
-            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 75%; z-index: 40; background: transparent;"></div>
-            <iframe
-              src="https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&controls=1"
-              style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen
-            ></iframe>
-          </div>
-        `;
-      }, 50);
+      if (!window.YT) {
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        
+        window.onYouTubeIframeAPIReady = function() {
+          initPlayer(ytId);
+        };
+      } else {
+        initPlayer(ytId);
+      }
+    }
+
+    function initPlayer(ytId) {
+      if (activeYouTubePlayer && typeof activeYouTubePlayer.destroy === 'function') {
+        activeYouTubePlayer.destroy();
+      }
+
+      activeYouTubePlayer = new YT.Player('youtube-player-element', {
+        height: '100%',
+        width: '100%',
+        videoId: ytId,
+        playerVars: {
+          'autoplay': 1,
+          'controls': 1,
+          'rel': 0,
+          'modestbranding': 1,
+          'iv_load_policy': 3,
+          'fs': 1,
+          'playsinline': 1
+        },
+        events: {
+          'onReady': (event) => {
+            event.target.playVideo();
+          }
+        }
+      });
     }
 
     function closeStudentVideoModal() {
+      if (activeYouTubePlayer && typeof activeYouTubePlayer.stopVideo === 'function') {
+        activeYouTubePlayer.stopVideo();
+        activeYouTubePlayer.destroy();
+        activeYouTubePlayer = null;
+      }
       const mount = document.getElementById("studentVideoMount");
-      if (mount) mount.innerHTML = ""; // إيقاف الفيديو والصوت وفصله تماماً فور الإغلاق
+      if (mount) mount.innerHTML = "";
+      
       document.getElementById("studentVideoModal")?.classList.add("hidden");
     }
 
